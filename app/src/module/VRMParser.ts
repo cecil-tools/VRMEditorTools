@@ -149,35 +149,26 @@ class VRMParser {
     // テスクチャを取り出す images, bufferViews
     private static loadImages = (chunkData: ArrayBuffer, json: any): Promise<any[]> => {
         console.log('loadImages', json.images)
+        console.log('chunkData', chunkData)
         return new Promise((resolve, reject) => {
             const images: any[] = []
-            json.images.forEach((v: any) => {
+            json.images
+                // .filter((v: any ) => (v.name == 'PAC01_01_icon'))
+                .forEach((v: any) => {                
                 const bufferView = json.bufferViews[v.bufferView]
-                
                 console.log('v', {
                     name: v.name,
                     mimeType: v.mimeType,
                     bufferViewIndex: v.bufferView,
                     bufferView: bufferView
                 })
-                const buf = new Uint8Array(chunkData, bufferView.byteOffset, bufferView.byteLength);
+
+                // new Uint8Array はうまく動作しない
+                // const buf = new Uint8Array(chunkData, bufferView.byteOffset, bufferView.byteLength)
+                const buf = chunkData.slice(bufferView.byteOffset, bufferView.byteOffset + bufferView.byteLength)
+                const blob = new Blob([buf], {type: v.mimeType})
                 
-                /*
-                const fileReader = new FileReader()
-                fileReader.onload = (event: any) => {
-                    // console.log('event', event);
-                    const img = event.currentTarget.result;
-                    images.push({name: v.name, mimeType: v.mimeType, src: img})
-
-                    console.log('length', json.images.length, images.length)
-                    if (json.images.length == images.length) {
-                        resolve(images)
-                    }
-                }
-                fileReader.readAsDataURL(new Blob([buf]))
-                */
-
-                const img = URL.createObjectURL(new Blob([buf]))
+                const img = URL.createObjectURL(blob)
                 images.push({name: v.name, mimeType: v.mimeType, src: img})
             })
             resolve(images)
