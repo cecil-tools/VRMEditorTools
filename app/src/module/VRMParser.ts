@@ -3,31 +3,31 @@ class VRMParser {
     // glTF2.0 glb フォーマット
     // https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#glb-file-format-specification
 
-    static LittleEndian = true
+    static IS_LITTLE_ENDIAN = true
     static HEADER_MAGIC = 0x46546C67
     static CHUNK_TYPE_JSON = 0x4E4F534A
     static CHUNK_TYPE_BIN = 0x004E4942
 
-    static CHUNK_HEADER_LENGTH = 12
+    static CHUNK_HEADER_SIZE = 12
     static CHUNK_LENGTH_SIZE = 4
     static CHUNK_TYPE_SIZE = 4
 
     static json?: any
     static images: any[] = []
 
+    static callback: (json: any, images: any[]) => void
+
     //VRM パース
-    public static parse = (file?: File) => {
+    public static parse = (file: File, callback: (json: any, images: any[]) => void) => {
         console.log('parse', file)
-        if (typeof file == 'undefined') {
-            return;
-        }
+        VRMParser.callback = callback;
 
         const reader = new FileReader()
         reader.onload = VRMParser.onLoadVRMFile
         reader.readAsArrayBuffer(file)
     }
 
-    private static onLoadVRMFile = (event: any) => {
+    private static onLoadVRMFile = async (event: any) => {
         // console.log('onLoadVRMFile', event)
         // console.log('total', event.total)        
         const raw: ArrayBuffer = event.currentTarget.result
@@ -47,7 +47,7 @@ class VRMParser {
         console.log('length', header.length)
 
         // Chunks 0 を jsonとしてパース
-        const chunk0 = VRMParser.parseChunk0(src, VRMParser.CHUNK_HEADER_LENGTH)
+        const chunk0 = VRMParser.parseChunk0(src, VRMParser.CHUNK_HEADER_SIZE)
         if (typeof chunk0 == 'undefined') {
             return
         }
@@ -55,7 +55,7 @@ class VRMParser {
         VRMParser.json = chunk0.json
 
         // Chunks 1 を 取得
-        const chunk1Offset = VRMParser.CHUNK_HEADER_LENGTH 
+        const chunk1Offset = VRMParser.CHUNK_HEADER_SIZE 
             + VRMParser.CHUNK_LENGTH_SIZE 
             + VRMParser.CHUNK_TYPE_SIZE 
             + chunk0.chunkLength
@@ -66,8 +66,17 @@ class VRMParser {
         console.log('chunk1', chunk1)
 
         // テスクチャを取り出す images, bufferViews
-        VRMParser.images = VRMParser.loadImages(chunk1?.chunkData.buffer, VRMParser.json);
-        console.log('images', VRMParser.images)
+        VRMParser.loadImages(chunk1.chunkData, VRMParser.json)
+            .then(images => {
+                VRMParser.images = images
+                console.log('images', VRMParser.images)
+
+                // コールバックする
+                VRMParser.callback(VRMParser.json, VRMParser.images)
+            })
+            .catch(e => {
+                console.error('e', e)
+            })
     }
 
     private static toHexStr = (value: number) => {
@@ -81,9 +90,9 @@ class VRMParser {
     */
     private static parseHeader = (src: DataView) => {
         console.log('src', src)
-        const magic = src.getUint32(0, VRMParser.LittleEndian)
-        const version = src.getUint32(4, VRMParser.LittleEndian)
-        const length = src.getUint32(8, VRMParser.LittleEndian)
+        const magic = src.getUint32(0, VRMParser.IS_LITTLE_ENDIAN)
+        const version = src.getUint32(4, VRMParser.IS_LITTLE_ENDIAN)
+        const length = src.getUint32(8, VRMParser.IS_LITTLE_ENDIAN)
         return {magic, version, length}
     }
 
@@ -95,15 +104,18 @@ class VRMParser {
     */
     private static parseChunk0 = (src: DataView, offset: number) => {
         console.log('parseChunk0', src, offset)
-        const chunkLength = src.getUint32(offset, VRMParser.LittleEndian)
-        const chunkType = src.getUint32(offset + 4, VRMParser.LittleEndian)
+        const chunkLength = src.getUint32(offset, VRMParser.IS_LITTLE_ENDIAN)
+        const chunkType = src.getUint32(offset + VRMParser.CHUNK_LENGTH_SIZE, VRMParser.IS_LITTLE_ENDIAN)
         if (VRMParser.CHUNK_TYPE_JSON != chunkType) {
             console.warn('not JSON.');
             return;
         }
 
         // JOSN データを取り出す
-        const chunkData = new Uint8Array(src.buffer, offset + 8, chunkLength)
+        const chunkData = new Uint8Array(src.buffer,
+            offset + VRMParser.CHUNK_LENGTH_SIZE + VRMParser.CHUNK_TYPE_SIZE,             
+            chunkLength)
+
         const decoder = new TextDecoder("utf8")
         const jsonText = decoder.decode(chunkData)
         const json = JSON.parse(jsonText)
@@ -120,36 +132,56 @@ class VRMParser {
     */    
     private static parseChunk1 = (src: DataView, offset: number) => {
         console.log('parseChunk1', src, offset)
-        const chunkLength = src.getUint32(offset, VRMParser.LittleEndian)
-        const chunkType = src.getUint32(offset + 4, VRMParser.LittleEndian)
+        const chunkLength = src.getUint32(offset, VRMParser.IS_LITTLE_ENDIAN)
+        const chunkType = src.getUint32(offset + VRMParser.CHUNK_LENGTH_SIZE, VRMParser.IS_LITTLE_ENDIAN)
         if (VRMParser.CHUNK_TYPE_BIN != chunkType) {
             console.warn('not BIN.');
             return;
         }
-        const chunkData = new Uint8Array(src.buffer, offset + 8, chunkLength)
+
+        const chunkData = new Uint8Array(src.buffer, 
+            offset + VRMParser.CHUNK_LENGTH_SIZE + VRMParser.CHUNK_TYPE_SIZE,
+            chunkLength)
+
         return {chunkLength, chunkData}
     }
 
     // テスクチャを取り出す images, bufferViews
-    private static loadImages = (chunk1: ArrayBuffer, json: any) => {
+    private static loadImages = (chunkData: ArrayBuffer, json: any): Promise<any[]> => {
         console.log('loadImages', json.images)
-        const images: any[] = []
-        json.images.map((v: any) => {
-            console.log('v', v)
-            const bufferView = json.bufferViews[v.bufferView]
-            console.log('v', {
-                name: v.name,
-                mimeType: v.mimeType,
-                bufferView: bufferView
+        return new Promise((resolve, reject) => {
+            const images: any[] = []
+            json.images.forEach((v: any) => {
+                const bufferView = json.bufferViews[v.bufferView]
+                
+                console.log('v', {
+                    name: v.name,
+                    mimeType: v.mimeType,
+                    bufferViewIndex: v.bufferView,
+                    bufferView: bufferView
+                })
+                const buf = new Uint8Array(chunkData, bufferView.byteOffset, bufferView.byteLength);
+                
+                /*
+                const fileReader = new FileReader()
+                fileReader.onload = (event: any) => {
+                    // console.log('event', event);
+                    const img = event.currentTarget.result;
+                    images.push({name: v.name, mimeType: v.mimeType, src: img})
+
+                    console.log('length', json.images.length, images.length)
+                    if (json.images.length == images.length) {
+                        resolve(images)
+                    }
+                }
+                fileReader.readAsDataURL(new Blob([buf]))
+                */
+
+                const img = URL.createObjectURL(new Blob([buf]))
+                images.push({name: v.name, mimeType: v.mimeType, src: img})
             })
-
-            const buf = new Uint8Array(chunk1, bufferView.byteOffset, bufferView.byteLength);
-            const img = URL.createObjectURL(new Blob([buf]))
-
-            images.push({name: v.name, mimeType: v.mimeType, src: img})
+            resolve(images)
         })
-
-        return images
     }
 }
 
