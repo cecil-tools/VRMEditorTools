@@ -65,7 +65,7 @@ class VRMParser {
         }
         console.log('chunk1', chunk1)
 
-        // テスクチャを取り出す images, bufferViews
+        // テクスチャを取り出す images, bufferViews
         VRMParser.loadImages(chunk1.chunkData, VRMParser.json)
             .then(images => {
                 VRMParser.images = images
@@ -146,28 +146,30 @@ class VRMParser {
         return {chunkLength, chunkData}
     }
 
-    // テスクチャを取り出す images, bufferViews
+    // テクスチャを取り出す images, bufferViews
     private static loadImages = (chunkData: ArrayBuffer, json: any): Promise<any[]> => {
-        console.log('loadImages', json.images)
-        console.log('chunkData', chunkData)
+        // console.log('loadImages', json.images)
+        // console.log('chunkData', chunkData)
         return new Promise((resolve, reject) => {
             const images: any[] = []
             json.images
                 // .filter((v: any ) => (v.name == 'PAC01_01_icon'))
                 .forEach((v: any) => {                
                 const bufferView = json.bufferViews[v.bufferView]
+                /*
                 console.log('v', {
                     name: v.name,
                     mimeType: v.mimeType,
                     bufferViewIndex: v.bufferView,
                     bufferView: bufferView
                 })
+                */
 
                 // new Uint8Array はうまく動作しない
                 // const buf = new Uint8Array(chunkData, bufferView.byteOffset, bufferView.byteLength)
                 const buf = chunkData.slice(bufferView.byteOffset, bufferView.byteOffset + bufferView.byteLength)
                 const blob = new Blob([buf], {type: v.mimeType})
-                
+
                 const img = URL.createObjectURL(blob)
                 images.push({name: v.name, mimeType: v.mimeType, src: img})
             })
