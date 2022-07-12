@@ -4,9 +4,16 @@ class VRMParser {
     // https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#glb-file-format-specification
 
     static LittleEndian = true
-    static HEADER_MAGIC = '0x46546C67'
-    static CHUNK_TYPE_JSON = '0x4E4F534A'
-    static CHUNK_TYPE_BIN = '0x004E4942'
+    static HEADER_MAGIC = 0x46546C67
+    static CHUNK_TYPE_JSON = 0x4E4F534A
+    static CHUNK_TYPE_BIN = 0x004E4942
+
+    static CHUNK_HEADER_LENGTH = 12
+    static CHUNK_LENGTH_SIZE = 4
+    static CHUNK_TYPE_SIZE = 4
+
+    static json?: any
+    static images: any[] = []
 
     //VRM パース
     public static parse = (file?: File) => {
@@ -27,22 +34,40 @@ class VRMParser {
         // DataView バイナリデータ読み書きオブジェクト
         const src = new DataView(raw)
         // TODO Header, Chunks を取り出す
-        // Header 12-byte
+        // Header 12-byte        
         const header = VRMParser.parseHeader(src)
         // console.log('magic', header.magicToStr)
-        if (header.magicToStr != VRMParser.HEADER_MAGIC) {
+        if (header.magic != VRMParser.HEADER_MAGIC) {
             // glb じゃなかった
             console.warn('file is not GLB file');
             return;
         }
+        console.log('magic', VRMParser.toHexStr(header.magic))
         console.log('version', header.version)
         console.log('length', header.length)
 
         // Chunks 0 を jsonとしてパース
-        const json = VRMParser.parseJson(src, 12)
-        console.log('json', json)
+        const chunk0 = VRMParser.parseChunk0(src, VRMParser.CHUNK_HEADER_LENGTH)
+        if (typeof chunk0 == 'undefined') {
+            return
+        }
+        console.log('chunk0', chunk0)
+        VRMParser.json = chunk0.json
 
-        // Chunks 1 は 各バイナリデータ 
+        // Chunks 1 を 取得
+        const chunk1Offset = VRMParser.CHUNK_HEADER_LENGTH 
+            + VRMParser.CHUNK_LENGTH_SIZE 
+            + VRMParser.CHUNK_TYPE_SIZE 
+            + chunk0.chunkLength
+        const chunk1 = VRMParser.parseChunk1(src, chunk1Offset)
+        if (typeof chunk1?.chunkData == 'undefined') {
+            return
+        }
+        console.log('chunk1', chunk1)
+
+        // テスクチャを取り出す images, bufferViews
+        VRMParser.images = VRMParser.loadImages(chunk1?.chunkData.buffer, VRMParser.json);
+        console.log('images', VRMParser.images)
     }
 
     private static toHexStr = (value: number) => {
@@ -59,36 +84,72 @@ class VRMParser {
         const magic = src.getUint32(0, VRMParser.LittleEndian)
         const version = src.getUint32(4, VRMParser.LittleEndian)
         const length = src.getUint32(8, VRMParser.LittleEndian)
-
-        // magic を文字列に変換
-        const magicToStr = VRMParser.toHexStr(magic)
-        return {magic, version, length, magicToStr}
+        return {magic, version, length}
     }
 
+    // JSON 部分を取り出す
     /* Chunks
     uint32 chunkLength
     uint32 chunkType
     ubyte[] chunkData
     */
-    private static parseJson = (src: DataView, offset: number) => {
-        console.log('parseJson', src)
+    private static parseChunk0 = (src: DataView, offset: number) => {
+        console.log('parseChunk0', src, offset)
         const chunkLength = src.getUint32(offset, VRMParser.LittleEndian)
         const chunkType = src.getUint32(offset + 4, VRMParser.LittleEndian)
-
-        const chunkTypeToStr = VRMParser.toHexStr(chunkType)
-        if (VRMParser.CHUNK_TYPE_JSON != chunkTypeToStr) {
+        if (VRMParser.CHUNK_TYPE_JSON != chunkType) {
             console.warn('not JSON.');
             return;
         }
 
         // JOSN データを取り出す
         const chunkData = new Uint8Array(src.buffer, offset + 8, chunkLength)
-        // console.log('chunkData', chunkData)
         const decoder = new TextDecoder("utf8")
         const jsonText = decoder.decode(chunkData)
         const json = JSON.parse(jsonText)
         
-        return json
+        return {chunkLength, json}
+    }
+
+
+    // バイナリ部分を取り出す
+    /* Chunks
+    uint32 chunkLength
+    uint32 chunkType
+    ubyte[] chunkData
+    */    
+    private static parseChunk1 = (src: DataView, offset: number) => {
+        console.log('parseChunk1', src, offset)
+        const chunkLength = src.getUint32(offset, VRMParser.LittleEndian)
+        const chunkType = src.getUint32(offset + 4, VRMParser.LittleEndian)
+        if (VRMParser.CHUNK_TYPE_BIN != chunkType) {
+            console.warn('not BIN.');
+            return;
+        }
+        const chunkData = new Uint8Array(src.buffer, offset + 8, chunkLength)
+        return {chunkLength, chunkData}
+    }
+
+    // テスクチャを取り出す images, bufferViews
+    private static loadImages = (chunk1: ArrayBuffer, json: any) => {
+        console.log('loadImages', json.images)
+        const images: any[] = []
+        json.images.map((v: any) => {
+            console.log('v', v)
+            const bufferView = json.bufferViews[v.bufferView]
+            console.log('v', {
+                name: v.name,
+                mimeType: v.mimeType,
+                bufferView: bufferView
+            })
+
+            const buf = new Uint8Array(chunk1, bufferView.byteOffset, bufferView.byteLength);
+            const img = URL.createObjectURL(new Blob([buf]))
+
+            images.push({name: v.name, mimeType: v.mimeType, src: img})
+        })
+
+        return images
     }
 }
 
