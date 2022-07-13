@@ -10,6 +10,7 @@
               <p>画像</p>
             </th>
             <th>容量(byte)</th>
+            <th>&nbsp;</th>
           </tr>
         </thead>
         <tbody>
@@ -20,6 +21,10 @@
               <p><img class="src_thumbnail" :src="img.src" :alt="img.name"/></p>
             </td>
             <td>{{img.size}}</td>
+            <td>
+              <p><button>エクスポート</button></p>
+              <p><button>インポート</button></p>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -62,14 +67,18 @@ export default class VRMParserView extends Vue {
   .table thead {
     background-color: lightslategray;
   }
-  .table thead p {
-    margin: 0 auto;
+  .table thead p, .table tbody p {
+    margin: 5px auto;
   }
 
   .table tbody tr {
     border: 1px black solid;
   }
 
+  .table tbody p button {
+    width: 120px;
+  }
+  
   .src_thumbnail {
     display: block;
     width: 60px;
