@@ -1,15 +1,12 @@
 <template>
   <div class="main">
-    <FileUpload :changeFile="changeFile" />
-    <button @click="clickExport">Export</button>
-    <VRMView ref="vrmview" :path="path" :debug="false" />
-
-    <div>
-      <h1>画像一覧</h1>
-      <div class="images" v-for="img,i in vrmImages" :key="i">
-        <div class="images_name">{{img.name}}</div>
-        <img class="images_src" :src="img.src" :alt="img.name"/> 
-      </div>
+    <div class="vrmviewContainer">
+      <FileUpload :changeFile="changeFile" />
+      <VRMView ref="vrmview" :path="path" :debug="false" />
+      <button @click="clickExport">VRM Export</button>
+    </div>
+    <div class="vrmparserContainer">
+      <VRMParserView ref="vrmparser" />
     </div>
 </div>
 </template>
@@ -19,21 +16,20 @@ import { Component, Vue } from 'vue-property-decorator'
 
 import VRMView from '@/components/VRMView.vue'
 import FileUpload from '@/components/FileUpload.vue'
-import VRMParser from '@/module/VRMParser.ts'
+import VRMParserView from '@/components/VRMParserView.vue'
 
 @Component({
   components: {
     VRMView,
-    FileUpload
+    FileUpload,
+    VRMParserView
   } 
 })
 export default class Main extends Vue {
   path = "./res/pk03.vrm"
 
   // アップロードされたファイル
-  _selectVrmFile?: File
-
-  vrmImages: any[] = []
+  selectVrmFile?: File | null = null
 
   mounted() {
     // VRM 読み込み
@@ -43,17 +39,14 @@ export default class Main extends Vue {
 
   changeFile(event: any) {
     console.log('changeFile', event)
-    this._selectVrmFile = event.target.files[0]
+    this.selectVrmFile = event.target.files[0]
     // VRM 読み込み
     const vrmview = this.$refs.vrmview as VRMView
-    vrmview.drawVrm( this._selectVrmFile! )
+    vrmview.drawVrm( this.selectVrmFile! )
 
-    //VRM パース
-    VRMParser.parse(this._selectVrmFile!, (json: any, images: any[]) => {
-      this.vrmImages.splice(0, this.vrmImages.length)
-      this.vrmImages.push(...images)
-      console.log('vrmImages', this.vrmImages)
-    })
+    // VRMパース
+    const vrmparser = this.$refs.vrmparser as VRMParserView    
+    vrmparser.parse( this.selectVrmFile! )
   }
 
   clickExport() {
@@ -65,23 +58,25 @@ export default class Main extends Vue {
 
 <style scoped>
   .main {
+    display: flex;
     width: 915px;
     margin: 0 auto;
     /* background-color: aqua; */
   }
 
-  .images {
-    width: 100%;
-    background-color: gray;
+  .vrmviewContainer {
+    flex: auto;
+    width: 300px;
+    /* background-color: red; */
   }
 
-  .images_name {
-    display: block;
-    text-align: center;
+  .vrmviewContainer button {
+    font-size: large;
   }
 
-  .images_src {
-    display: block;
-    width: 200px;
+  .vrmparserContainer {
+    flex: auto;
+    width: 300px;
+    /* background: blue; */
   }
 </style>

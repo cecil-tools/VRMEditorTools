@@ -27,4 +27,8 @@ export default class FileUpload extends Vue {
     background-color: gray;
     border: 1px solid red;
   }
+
+  input[type="file"] {
+    font-size: large;
+  }
 </style>

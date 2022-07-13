@@ -131,6 +131,6 @@ export default class VRMView extends Vue {
     height: 400px;
 
     background-color: gray;
-    border: 1px solid red;
+    /* border: 1px solid red; */
   }
 </style>

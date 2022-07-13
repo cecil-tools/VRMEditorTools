@@ -162,7 +162,13 @@ class VRMParser {
                 const blob = new Blob([buf], {type: v.mimeType})
 
                 const img = URL.createObjectURL(blob)
-                images.push({name: v.name, mimeType: v.mimeType, src: img})
+                images.push({
+                    index: v.bufferView,
+                    name: v.name,
+                    mimeType: v.mimeType,
+                    src: img,
+                    size: blob.size
+                })
             })
             resolve(images)
         })
