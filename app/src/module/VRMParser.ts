@@ -96,52 +96,53 @@ class VRMParser {
         return {magic, version, length}
     }
 
-    // JSON 部分を取り出す
     /* Chunks
     uint32 chunkLength
     uint32 chunkType
     ubyte[] chunkData
     */
-    private static parseChunk0 = (src: DataView, offset: number) => {
-        console.log('parseChunk0', src, offset)
+    private static parseChunk = (type: number, src: DataView, offset: number) => {
+        console.log('parseChunk', src, offset)
         const chunkLength = src.getUint32(offset, VRMParser.IS_LITTLE_ENDIAN)
         const chunkType = src.getUint32(offset + VRMParser.CHUNK_LENGTH_SIZE, VRMParser.IS_LITTLE_ENDIAN)
-        if (VRMParser.CHUNK_TYPE_JSON != chunkType) {
+        if (type != chunkType) {
             console.warn('not JSON.');
             return;
         }
 
-        // JOSN データを取り出す
+        // データを取り出す
         const chunkData = new Uint8Array(src.buffer,
             offset + VRMParser.CHUNK_LENGTH_SIZE + VRMParser.CHUNK_TYPE_SIZE,             
             chunkLength)
 
+        return {chunkLength, chunkData}
+    }
+
+    // JSON 部分を取り出す
+    private static parseChunk0 = (src: DataView, offset: number) => {
+        console.log('parseChunk0', src, offset)
+        const chunk = VRMParser.parseChunk(VRMParser.CHUNK_TYPE_JSON, src, offset)
+        if (typeof chunk == 'undefined') {
+            return
+        }
+
+        const chunkLength = chunk.chunkLength
         const decoder = new TextDecoder("utf8")
-        const jsonText = decoder.decode(chunkData)
+        const jsonText = decoder.decode(chunk.chunkData)
         const json = JSON.parse(jsonText)
         
         return {chunkLength, json}
     }
 
-
-    // バイナリ部分を取り出す
-    /* Chunks
-    uint32 chunkLength
-    uint32 chunkType
-    ubyte[] chunkData
-    */    
+    // バイナリ部分を取り出す  
     private static parseChunk1 = (src: DataView, offset: number) => {
         console.log('parseChunk1', src, offset)
-        const chunkLength = src.getUint32(offset, VRMParser.IS_LITTLE_ENDIAN)
-        const chunkType = src.getUint32(offset + VRMParser.CHUNK_LENGTH_SIZE, VRMParser.IS_LITTLE_ENDIAN)
-        if (VRMParser.CHUNK_TYPE_BIN != chunkType) {
-            console.warn('not BIN.');
-            return;
+        const chunk = VRMParser.parseChunk(VRMParser.CHUNK_TYPE_BIN, src, offset)
+        if (typeof chunk == 'undefined') {
+            return
         }
-
-        const chunkData = new Uint8Array(src.buffer, 
-            offset + VRMParser.CHUNK_LENGTH_SIZE + VRMParser.CHUNK_TYPE_SIZE,
-            chunkLength)
+        const chunkLength = chunk.chunkLength
+        const chunkData = chunk.chunkData
 
         return {chunkLength, chunkData}
     }
@@ -153,18 +154,8 @@ class VRMParser {
         return new Promise((resolve, reject) => {
             const images: any[] = []
             json.images
-                // .filter((v: any ) => (v.name == 'PAC01_01_icon'))
                 .forEach((v: any) => {                
                 const bufferView = json.bufferViews[v.bufferView]
-                /*
-                console.log('v', {
-                    name: v.name,
-                    mimeType: v.mimeType,
-                    bufferViewIndex: v.bufferView,
-                    bufferView: bufferView
-                })
-                */
-
                 // new Uint8Array はうまく動作しない
                 // const buf = new Uint8Array(chunkData, bufferView.byteOffset, bufferView.byteLength)
                 const buf = chunkData.slice(bufferView.byteOffset, bufferView.byteOffset + bufferView.byteLength)
