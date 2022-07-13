@@ -22,8 +22,8 @@
             </td>
             <td>{{img.size}}</td>
             <td>
-              <p><button>エクスポート</button></p>
-              <p><button>インポート</button></p>
+              <p><button @click="exportImage(img)">エクスポート</button></p>
+              <p><button @click="importImage(img)">インポート</button></p>
             </td>
           </tr>
         </tbody>
@@ -55,6 +55,22 @@ export default class VRMParserView extends Vue {
       console.log('vrmImages', this.vrmImages)
     })
   }
+
+  // 画像ファイル ダウンロード
+  exportImage(img: any) {
+    console.log('exportImage', img)
+
+    let link = document.createElement('a')
+    link.href = img.src
+    link.download = img.name
+    link.click()
+  }
+
+  // 画像ファイル差し替え
+  importImage(img: any) {
+    console.log('importImage', img)
+    // TODO ファイル選択    
+  }
 }
 </script>
 
@@ -78,7 +94,7 @@ export default class VRMParserView extends Vue {
   .table tbody p button {
     width: 120px;
   }
-  
+
   .src_thumbnail {
     display: block;
     width: 60px;
