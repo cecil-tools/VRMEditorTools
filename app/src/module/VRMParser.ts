@@ -15,11 +15,17 @@ class VRMParser {
     static json?: any
     static images: any[] = []
 
+    static filename?: string
+    static header?: any
+    static chunk0?: any
+    static chunk1?: any
+
     static callback: (json: any, images: any[]) => void
 
     //VRM パース
     public static parse = (file: File, callback: (json: any, images: any[]) => void) => {
         console.log('parse', file)
+        VRMParser.filename = file.name
         VRMParser.callback = callback;
 
         const reader = new FileReader()
@@ -35,38 +41,38 @@ class VRMParser {
         const src = new DataView(raw)
         // TODO Header, Chunks を取り出す
         // Header 12-byte        
-        const header = VRMParser.parseHeader(src)
+        VRMParser.header = VRMParser.parseHeader(src)
         // console.log('magic', header.magicToStr)
-        if (header.magic != VRMParser.HEADER_MAGIC) {
+        if (VRMParser.header.magic != VRMParser.HEADER_MAGIC) {
             // glb じゃなかった
             console.warn('file is not GLB file');
             return;
         }
-        console.log('magic', VRMParser.toHexStr(header.magic))
-        console.log('version', header.version)
-        console.log('length', header.length)
+        console.log('magic', VRMParser.toHexStr(VRMParser.header.magic))
+        console.log('version', VRMParser.header.version)
+        console.log('length', VRMParser.header.length)
 
         // Chunks 0 を jsonとしてパース
-        const chunk0 = VRMParser.parseChunk0(src, VRMParser.CHUNK_HEADER_SIZE)
-        if (typeof chunk0 == 'undefined') {
+        VRMParser.chunk0 = VRMParser.parseChunk0(src, VRMParser.CHUNK_HEADER_SIZE)
+        if (typeof VRMParser.chunk0  == 'undefined') {
             return
         }
-        console.log('chunk0', chunk0)
-        VRMParser.json = chunk0.json
+        console.log('chunk0', VRMParser.chunk0 )
+        VRMParser.json = VRMParser.chunk0.json
 
         // Chunks 1 を 取得
         const chunk1Offset = VRMParser.CHUNK_HEADER_SIZE 
             + VRMParser.CHUNK_LENGTH_SIZE 
             + VRMParser.CHUNK_TYPE_SIZE 
-            + chunk0.chunkLength
-        const chunk1 = VRMParser.parseChunk1(src, chunk1Offset)
-        if (typeof chunk1?.chunkData == 'undefined') {
+            + VRMParser.chunk0.chunkLength
+        VRMParser.chunk1 = VRMParser.parseChunk1(src, chunk1Offset)
+        if (typeof VRMParser.chunk1?.chunkData == 'undefined') {
             return
         }
-        console.log('chunk1', chunk1)
+        console.log('chunk1', VRMParser.chunk1)
 
         // テクスチャを取り出す images, bufferViews
-        VRMParser.loadImages(chunk1.chunkData, VRMParser.json)
+        VRMParser.loadImages(VRMParser.chunk1.chunkData, VRMParser.json)
             .then(images => {
                 VRMParser.images = images
                 console.log('images', VRMParser.images)
@@ -127,11 +133,13 @@ class VRMParser {
         }
 
         const chunkLength = chunk.chunkLength
+        const chunkData = chunk.chunkData
+
         const decoder = new TextDecoder("utf8")
         const jsonText = decoder.decode(chunk.chunkData)
         const json = JSON.parse(jsonText)
         
-        return {chunkLength, json}
+        return {chunkLength, chunkData, json}
     }
 
     // バイナリ部分を取り出す  
@@ -171,6 +179,139 @@ class VRMParser {
                 })
             })
             resolve(images)
+        })
+    }
+
+    // json(chunk0), chunk1 を再構築する
+    public static replaceImage = (img: any, fileBuf: ArrayBuffer): Promise<void> => {
+        console.log('replaceImage', img, fileBuf)
+        
+        return new Promise((resolve, reject) => {
+
+            const chunkData = VRMParser.chunk1.chunkData
+            const distChunkDataList: any[] = []
+            let byteOffset = 0;
+            VRMParser.json.bufferViews.forEach((bufferView: any, index: number) => {
+                // console.log('bufferViews', bufferView)
+                const buf = chunkData.slice(bufferView.byteOffset, bufferView.byteOffset + bufferView.byteLength)
+                const blob = new Blob([buf])
+                // console.log('blob', blob)
+                distChunkDataList.push({
+                    index: index,
+                    byteOffset: byteOffset,
+                    byteLength: blob.size,
+                    blob: blob,
+                    src: buf
+                })
+                byteOffset += blob.size
+            })            
+            // console.log('images', VRMParser.json.images)
+            // 名前が一致する json.images を取り出す
+            const image = VRMParser.json.images.filter((v: any) => (v.name == img.name))[0]
+            // console.log('image', image)
+            const distChunkDataListIndex = image.bufferView
+
+            // distChunkDataList distChunkDataListIndex の位置の blob を file 書き換える
+            distChunkDataList[distChunkDataListIndex].byteLength = fileBuf.byteLength
+            distChunkDataList[distChunkDataListIndex].blob = new Blob([fileBuf])
+            distChunkDataList[distChunkDataListIndex].src = new Uint8Array(fileBuf)
+
+            // distChunkDataList byteOffset を書き換える
+            byteOffset = 0;
+            distChunkDataList.forEach((v: any, i: number, src: any[]) => {
+                src[i].byteOffset = byteOffset
+                byteOffset += v.byteLength
+            })
+            console.log('distChunkDataList', distChunkDataList)
+
+            // distChunkDataList を元に chunk1 を作成する
+            // byteOffset は byteLength            
+            VRMParser.chunk1.chunkData = new Uint8Array(byteOffset)
+            distChunkDataList.forEach( (v: any) => {
+                VRMParser.chunk1.chunkData.set(v.src, v.byteOffset)
+            })
+            VRMParser.chunk1.chunkLength = VRMParser.chunk1.chunkData.length
+            console.log('chunk1', VRMParser.chunk1)
+
+            // json.bufferViews 位置の byteOffset, byteLength 書き換え
+            VRMParser.json.bufferViews.forEach((v: any, i: number, src: any[]) => { 
+                const data = distChunkDataList[i]
+                src[i].byteLength = data.byteLength
+                src[i].byteOffset = data.byteOffset
+            })
+
+            // json.buffers[0].byteLength も更新
+            VRMParser.json.buffers[0].byteLength = VRMParser.chunk1.chunkLength
+
+            // console.log('bufferViews', VRMParser.json.bufferViews)
+            // chunk0 を更新
+            VRMParser.chunk0.json = VRMParser.json
+            VRMParser.chunk0.chunkData = new TextEncoder().encode( JSON.stringify(VRMParser.json) )
+            VRMParser.chunk0.chunkLength = VRMParser.chunk0.chunkData.length
+
+            // headerの length も更新
+            VRMParser.header.length = VRMParser.CHUNK_HEADER_SIZE 
+                + VRMParser.CHUNK_LENGTH_SIZE 
+                + VRMParser.CHUNK_TYPE_SIZE 
+                + VRMParser.chunk0.chunkLength
+                + VRMParser.CHUNK_LENGTH_SIZE 
+                + VRMParser.CHUNK_TYPE_SIZE 
+                + VRMParser.chunk1.chunkLength
+
+            resolve()
+        })
+    }
+
+    public static createVRMFile = (): Promise<File> => {
+        /* Header 12-byte
+        uint32 magic
+        uint32 version
+        uint32 length
+        */
+        /* chunk0 json
+        uint32 chunkLength
+        uint32 chunkType
+        ubyte[] chunkData
+        */
+        /* chunk1 json
+        uint32 chunkLength
+        uint32 chunkType
+        ubyte[] chunkData
+        */
+        console.log('chunk0', VRMParser.chunk0) 
+        console.log('chunk1', VRMParser.chunk1)
+
+        return new Promise((resolve, reject) => {
+            const data = new ArrayBuffer(
+                VRMParser.CHUNK_HEADER_SIZE 
+                + VRMParser.CHUNK_LENGTH_SIZE 
+                + VRMParser.CHUNK_TYPE_SIZE 
+                + VRMParser.chunk0.chunkLength
+                + VRMParser.CHUNK_LENGTH_SIZE 
+                + VRMParser.CHUNK_TYPE_SIZE 
+                + VRMParser.chunk1.chunkLength )
+
+            const uint8 = new Uint8Array(data)
+            const view = new DataView(data);
+            let offset = 0
+            view.setUint32(0, VRMParser.header.magic, VRMParser.IS_LITTLE_ENDIAN)
+            view.setUint32(4, VRMParser.header.version, VRMParser.IS_LITTLE_ENDIAN)
+            view.setUint32(8, VRMParser.header.length, VRMParser.IS_LITTLE_ENDIAN)
+            offset += VRMParser.CHUNK_HEADER_SIZE
+            view.setUint32(offset, VRMParser.chunk0.chunkLength, VRMParser.IS_LITTLE_ENDIAN)
+            offset += VRMParser.CHUNK_LENGTH_SIZE
+            view.setUint32(offset, VRMParser.CHUNK_TYPE_JSON, VRMParser.IS_LITTLE_ENDIAN)
+            offset += VRMParser.CHUNK_TYPE_SIZE
+            uint8.set(VRMParser.chunk0.chunkData, offset)
+
+            offset += VRMParser.chunk0.chunkLength
+            view.setUint32(offset, VRMParser.chunk1.chunkLength, VRMParser.IS_LITTLE_ENDIAN)
+            offset += VRMParser.CHUNK_LENGTH_SIZE
+            view.setUint32(offset, VRMParser.CHUNK_TYPE_BIN, VRMParser.IS_LITTLE_ENDIAN)
+            offset += VRMParser.CHUNK_TYPE_SIZE
+            uint8.set(VRMParser.chunk1.chunkData, offset)
+
+            resolve(new File([data], VRMParser.filename!))
         })
     }
 }

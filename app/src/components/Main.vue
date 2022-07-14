@@ -6,7 +6,7 @@
       <button @click="clickExport">VRM Export</button>
     </div>
     <div class="vrmparserContainer">
-      <VRMParserView ref="vrmparser" />
+      <VRMParserView ref="vrmparser" :drawVrm="drawVrm"/>
     </div>
 </div>
 </template>
@@ -50,8 +50,17 @@ export default class Main extends Vue {
   }
 
   clickExport() {
+    const vrmparser = this.$refs.vrmparser as VRMParserView
+    vrmparser.downloadFile()
+    
+    // GLTF2Export
+    // const vrmview = this.$refs.vrmview as VRMView
+    // vrmview.downloadFile()
+  }
+
+  drawVrm(file: File) {
     const vrmview = this.$refs.vrmview as VRMView
-    vrmview.downloadFile()
+    vrmview.drawVrm( file )
   }
 }
 </script>

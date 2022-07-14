@@ -72,7 +72,7 @@ export default class VRMView extends Vue {
   
   // VRM 読み込み
   async drawVrm(sceneFilename: string | File) {
-    console.log('drawVrm')
+    console.log('drawVrm', sceneFilename)
     
     // 表示の初期化
     this.initScene();
@@ -107,6 +107,7 @@ export default class VRMView extends Vue {
       })
   }
 
+  /*
   downloadFile() {
     console.log('downloadFile')
 
@@ -122,6 +123,7 @@ export default class VRMView extends Vue {
         glb.downloadFiles()
       })
   }
+  */
 }
 </script>
 

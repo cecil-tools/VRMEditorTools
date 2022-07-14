@@ -34,12 +34,16 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator'
+import VRMView from '@/components/VRMView.vue'
 import VRMParser from '@/module/VRMParser'
 
 @Component({
   components: {} 
 })
 export default class VRMParserView extends Vue {
+  @Prop() 
+  drawVrm: (file: File) => void
+
   vrmImages: any[] = []
 
   parse(selectVrmFile: File) {
@@ -60,7 +64,7 @@ export default class VRMParserView extends Vue {
   exportImage(img: any) {
     console.log('exportImage', img)
 
-    let link = document.createElement('a')
+    const link = document.createElement('a')
     link.href = img.src
     link.download = img.name
     link.click()
@@ -69,7 +73,58 @@ export default class VRMParserView extends Vue {
   // 画像ファイル差し替え
   importImage(img: any) {
     console.log('importImage', img)
-    // TODO ファイル選択    
+    // ファイル選択
+    let input = document.createElement('input')
+    input.type = 'file'
+    input.onchange = (event: any) => {
+      console.log('files', event.currentTarget.files[0])
+      const file = event.currentTarget.files[0]
+
+      const fileReader = new FileReader()
+      fileReader.onload = (event: any) => {
+        const raw: ArrayBuffer = event.currentTarget.result
+
+        // VRM 内の画像ファイルを置き換える
+        VRMParser.replaceImage(img, raw)
+          .then(() => {
+            // TODO VRM情報が更新されている
+            console.log('replaceImage success')
+            VRMParser.createVRMFile()
+              .then((file: File) => {
+                // console.log('file', file)
+
+                // VRMView 描画の更新
+                if (this.drawVrm) {
+                  this.drawVrm(file)
+                }
+              })
+              .catch(e => {
+                console.error('error', e)
+              })
+          })
+          .catch( e => {
+            console.error('error', e)
+          })
+      }
+      fileReader.readAsArrayBuffer(file)
+    }
+    input.click()
+  }
+
+  downloadFile() {
+    VRMParser.createVRMFile()
+      .then((file: File) => {
+        console.log('file', file)
+
+        // ダウンロードしてみる
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(file)
+        link.download = file.name
+        link.click()
+      })
+      .catch(e => {
+        console.error('error', e)
+      })
   }
 }
 </script>
