@@ -93,6 +93,13 @@ export default class VRMParserView extends Vue {
               .then((file: File) => {
                 // console.log('file', file)
 
+                //画像一覧の更新
+                VRMParser.parse(file, (json: any, images: any[]) => {
+                  this.vrmImages.splice(0, this.vrmImages.length)
+                  this.vrmImages.push(...images)
+                  console.log('vrmImages', this.vrmImages)
+                })
+                
                 // VRMView 描画の更新
                 if (this.drawVrm) {
                   this.drawVrm(file)
