@@ -1,8 +1,7 @@
 <template>
   <div class="fileupload">
-    <form>
-        <input type="file" @change="changeFile" placeholder="VRMファイル" />
-    </form>
+      <label for="btnFile">VRMファイルを選択</label>
+      <input id="btnFile" type="file" @change="changeFile" placeholder="VRMファイル" />
   </div>
 </template>
 
@@ -19,16 +18,23 @@ export default class FileUpload extends Vue {
 }
 </script>
 
-<style scoped>
-  #canvas {    
-    width: 300px;
-    height: 400px;
-
-    background-color: gray;
-    border: 1px solid red;
-  }
-
-  input[type="file"] {
-    font-size: large;
+<style scoped lang="scss">
+  .fileupload {
+    label {
+      font-size: large;
+      border: solid 3px #AAAAAA;
+      background-color: #F0F0F0;
+      display: block;
+      width: 90%;
+      margin: 5px auto;
+      transition: .3s;
+    }
+    label:hover {
+      background-color: #AAAAAA;
+    }
+    input[type="file"]  {
+      /* font-size: large; */
+      display:none; 
+    }
   }
 </style>

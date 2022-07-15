@@ -3,7 +3,10 @@
     <div class="container vrmviewContainer">
       <FileUpload :changeFile="changeFile" />
       <VRMView ref="vrmview" :path="path" :debug="false" />
-      <button @click="clickExport">VRM Export</button>
+      <div>
+        <label for="btnExport">VRMファイルを出力</label>
+        <input id="btnExport" type="button" @click="clickExport" />
+      </div>
     </div>
     <div class="container vrmparserContainer">
       <VRMParserView ref="vrmparser" :drawVrm="drawVrm"/>
@@ -52,10 +55,6 @@ export default class Main extends Vue {
   clickExport() {
     const vrmparser = this.$refs.vrmparser as VRMParserView
     vrmparser.downloadFile()
-    
-    // GLTF2Export
-    // const vrmview = this.$refs.vrmview as VRMView
-    // vrmview.downloadFile()
   }
 
   drawVrm(file: File) {
@@ -74,8 +73,22 @@ export default class Main extends Vue {
     /* background-color: aqua; */
     .container {
       width: 300px;
-      button {
+
+      label {
         font-size: large;
+        border: solid 3px #AAAAAA;
+        background-color: #F0F0F0;
+        display: block;
+        width: 90%;
+        margin: 5px auto;
+        transition: .3s;
+      }
+      label:hover {
+        background-color: #AAAAAA;
+      }
+      input[type="button"] {
+        /* font-size: large; */
+        display:none; 
       }
     }
   }
