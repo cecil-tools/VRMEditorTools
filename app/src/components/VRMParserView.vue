@@ -34,7 +34,6 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator'
-import VRMView from '@/components/VRMView.vue'
 import VRMParser from '@/module/VRMParser'
 
 @Component({
