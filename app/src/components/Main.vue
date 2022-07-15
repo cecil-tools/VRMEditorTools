@@ -1,11 +1,11 @@
 <template>
   <div class="main">
-    <div class="vrmviewContainer">
+    <div class="container vrmviewContainer">
       <FileUpload :changeFile="changeFile" />
       <VRMView ref="vrmview" :path="path" :debug="false" />
       <button @click="clickExport">VRM Export</button>
     </div>
-    <div class="vrmparserContainer">
+    <div class="container vrmparserContainer">
       <VRMParserView ref="vrmparser" :drawVrm="drawVrm"/>
     </div>
 </div>
@@ -65,27 +65,28 @@ export default class Main extends Vue {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
   .main {
     display: flex;
-    width: 915px;
+    justify-content: center;
+    /* width: 915px; */
     margin: 0 auto;
     /* background-color: aqua; */
+    .container {
+      width: 300px;
+      button {
+        font-size: large;
+      }
+    }
   }
 
-  .vrmviewContainer {
-    flex: auto;
-    width: 300px;
-    /* background-color: red; */
-  }
+  @media screen and (max-width: 767px) {
+    .main {
+      flex-direction: column;
 
-  .vrmviewContainer button {
-    font-size: large;
-  }
-
-  .vrmparserContainer {
-    flex: auto;
-    width: 300px;
-    /* background: blue; */
+      .container {
+        width: 100%;
+      }
+    }
   }
 </style>
