@@ -39,7 +39,7 @@ class VRMParser {
         const raw: ArrayBuffer = event.currentTarget.result
         // DataView バイナリデータ読み書きオブジェクト
         const src = new DataView(raw)
-        // TODO Header, Chunks を取り出す
+        // Header, Chunks を取り出す
         // Header 12-byte        
         VRMParser.header = VRMParser.parseHeader(src)
         // console.log('magic', header.magicToStr)
