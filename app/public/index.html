@@ -5,14 +5,17 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <link rel="icon" href="<%= BASE_URL %>favicon.ico">
-    <title><%= htmlWebpackPlugin.options.title %></title>
+    <link rel="apple-touch-icon" sizes="180x180" href="<%= BASE_URL %>res/apple-touch-icon-180x180.png">
+
     <!-- Twitter カード -->
     <meta name="twitter:card" content="summary"></meta>
     <meta name="twitter:creator" content="@t_furu" />
     <meta property="og:url" content="https://copytheavatarsettings.web.app/" />
-    <meta property="og:title" content="VRMEditorTools" />
-    <meta property="og:description" content="ブラウザでVRMのテクスチャを変更できるツール" />
-    <meta property="og:image" content="https://copytheavatarsettings.web.app/rws/ogimage.png" />    
+    <meta property="og:title" content="<%= htmlWebpackPlugin.options.title %>" />
+    <meta property="og:description" content="<%= htmlWebpackPlugin.options.description %>" />
+    <meta property="og:image" content="<%= BASE_URL %>res/ogimage.png" />    
+    
+    <title><%= htmlWebpackPlugin.options.title %></title>
   </head>
   <body>
     <noscript>
