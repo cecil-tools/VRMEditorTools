@@ -2,8 +2,8 @@
   <div class="about">
     <div>
       <h2>特徴</h2>
-      <p>すべての処理が ブラウザ上で動く JavaScript で実装されています</p>
-      <p>VRMファイルの流出の心配もない安全なしくみです</p>
+      <p>すべての処理をブラウザ上で動く JavaScript で実装しました</p>
+      <p>VRMファイルの流出の心配がない安全なしくみです</p>
       <h2>使い方</h2>
       <div class="how_to_use">
         <ol>
@@ -29,11 +29,17 @@
 
 <style scoped lang="scss">
   .how_to_use {
-    width: 300px;
+    width: 500px;
     margin: 0 auto;
 
     li {
       text-align: left;
+    }
+  }
+
+  @media screen and (max-width: 767px) {
+    .how_to_use {
+      width: 300px;
     }
   }
 </style>

@@ -19,3 +19,12 @@ import Main from '@/components/Main.vue'
 })
 export default class Home extends Vue {}
 </script>
+
+<style scoped lang="scss">
+  h1 {
+    margin: 5px auto;
+  }
+  p {
+    margin: 5px auto;
+  }
+</style>
