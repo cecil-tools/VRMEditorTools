@@ -3,6 +3,7 @@ module.exports = {
         index: {
             entry: 'src/main.ts',
             title: 'VRMEditorTools',
+            description: 'ブラウザでVRMのテクスチャを変更できるツール'
         }
     }
 }
