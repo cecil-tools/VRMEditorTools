@@ -1,3 +1,9 @@
+/** VRMParser
+ *  VRMの解析とテクスチャ置き換え等の機能をもつ
+ * 
+ *  Copyright (c) 2022 Nobuyuki Furukawa (tfuru)
+ *  This software is released under the MIT License, see LICENSE.
+ */
 class VRMParser {
 
     // glTF2.0 glb フォーマット
