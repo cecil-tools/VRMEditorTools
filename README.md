@@ -1,6 +1,5 @@
-# CopyTheAvatarSettings
-
-セシル変身 系 VRM のパラメータをコピーする Web ツール
+# VRMEditorTools
+ブラウザでVRMのテクスチャを変更できるツール
 
 # 環境
-- firebase
+- firebase hosting
