@@ -2,10 +2,12 @@ import Vue from 'vue';
 import VueI18n from 'vue-i18n';
 import messages from './messages';
 
-Vue.use(VueI18n);
+const langBrowser = navigator.language.split("-")[0];
 
+Vue.use(VueI18n);
 const i18n = new VueI18n({
-  locale: 'ja',
+  locale: langBrowser,
+  fallbackLocale: 'en',
   messages,
 });
 
