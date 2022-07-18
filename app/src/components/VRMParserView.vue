@@ -56,6 +56,11 @@ export default class VRMParserView extends Vue {
       this.vrmImages.splice(0, this.vrmImages.length)
       this.vrmImages.push(...images)
       console.log('vrmImages', this.vrmImages)
+
+      // 一人称視点の位置を修正
+      const position = VRMParser.getFirstPersonBoneOffset()
+      // position.y = 100.0
+      VRMParser.setFirstPersonBoneOffset(position)
     })
   }
 
@@ -86,8 +91,9 @@ export default class VRMParserView extends Vue {
         // VRM 内の画像ファイルを置き換える
         VRMParser.replaceImage(img, raw)
           .then(() => {
-            // TODO VRM情報が更新されている
+            // VRM情報が更新されている
             console.log('replaceImage success')
+
             VRMParser.createVRMFile()
               .then((file: File) => {
                 // console.log('file', file)

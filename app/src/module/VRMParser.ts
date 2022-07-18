@@ -5,9 +5,13 @@
  *  This software is released under the MIT License, see LICENSE.
  */
 class VRMParser {
-
-    // glTF2.0 glb フォーマット
-    // https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#glb-file-format-specification
+    /* * ファイルフォーマット ドキュメント
+    * glTF2.0 glb フォーマット
+    * https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#glb-file-format-specification
+    * 
+    * VRM 0.0 フォーマット
+    * https://github.com/vrm-c/vrm-specification/blob/master/specification/0.0/README.ja.md 
+    */
 
     static IS_LITTLE_ENDIAN = true
     static HEADER_MAGIC = 0x46546C67
@@ -266,6 +270,39 @@ class VRMParser {
 
             resolve()
         })
+    }
+
+    // 一人称視点の視点の位置を取得
+    // json.extensions.VRM.firstPerson
+    public static getFirstPersonBoneOffset = (): {x: number, y: number, z: number} => {
+        const extVRM = VRMParser.json.extensions.VRM
+        console.log('extVRM', extVRM)
+        console.log('firstPersonBoneOffset', extVRM.firstPerson.firstPersonBoneOffset)
+        return  extVRM.firstPerson.firstPersonBoneOffset
+    }
+
+    // 一人称視点の視点の位置を設定
+    public static setFirstPersonBoneOffset = (position: {x: number, y: number, z: number}) => {
+        const extVRM = VRMParser.json.extensions.VRM
+        extVRM.firstPerson.firstPersonBoneOffset.x = position.x
+        extVRM.firstPerson.firstPersonBoneOffset.y = position.y
+        extVRM.firstPerson.firstPersonBoneOffset.z = position.z
+
+        // chunk0 を更新
+        VRMParser.chunk0.json = VRMParser.json
+        VRMParser.chunk0.chunkData = new TextEncoder().encode( JSON.stringify(VRMParser.json) )
+        VRMParser.chunk0.chunkLength = VRMParser.chunk0.chunkData.length
+
+        // headerの length も更新
+        VRMParser.header.length = VRMParser.CHUNK_HEADER_SIZE 
+            + VRMParser.CHUNK_LENGTH_SIZE 
+            + VRMParser.CHUNK_TYPE_SIZE 
+            + VRMParser.chunk0.chunkLength
+            + VRMParser.CHUNK_LENGTH_SIZE 
+            + VRMParser.CHUNK_TYPE_SIZE 
+            + VRMParser.chunk1.chunkLength
+            
+        console.log('firstPersonBoneOffset', extVRM)
     }
 
     public static createVRMFile = (): Promise<File> => {
