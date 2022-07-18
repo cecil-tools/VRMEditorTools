@@ -279,7 +279,7 @@ class VRMParser {
         uint32 chunkType
         ubyte[] chunkData
         */
-        /* chunk1 json
+        /* chunk1 bin
         uint32 chunkLength
         uint32 chunkType
         ubyte[] chunkData
