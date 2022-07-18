@@ -1,7 +1,7 @@
 <template>
   <div class="fileupload">
-      <label for="btnFile">VRMファイルを選択</label>
-      <input id="btnFile" type="file" @change="changeFile" placeholder="VRMファイル" />
+      <label for="btnFileSelect">{{$t('btnFileSelect')}}</label>
+      <input id="btnFileSelect" type="file" @change="changeFile" placeholder="VRMファイル" />
   </div>
 </template>
 
@@ -15,6 +15,10 @@ import { Component, Vue, Prop } from 'vue-property-decorator'
 export default class FileUpload extends Vue {
     @Prop()
     changeFile!: (event: any) => void
+
+    mounted () {
+      console.log('FileUpload $t', this.$t)
+    }
 }
 </script>
 

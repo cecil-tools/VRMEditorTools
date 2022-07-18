@@ -1,7 +1,7 @@
 <template>
   <div class="home">
     <h1>VRMEditorTools</h1>
-    <p>ブラウザでVRMのテクスチャを変更できるツール</p>
+    <p>{{$t('description')}}</p>
     <Main />
   </div>
 </template>

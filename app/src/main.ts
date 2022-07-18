@@ -8,8 +8,11 @@ Vue.config.productionTip = false
 import vb from 'vue-babylonjs'
 Vue.use(vb)
 
+import i18n from '@/languages'
+
 new Vue({
+  i18n,
   router,
-  store,
+  store,  
   render: h => h(App)
 }).$mount('#app')

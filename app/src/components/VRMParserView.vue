@@ -4,12 +4,12 @@
       <table class="table">
         <thead>
           <tr>
-            <th>番号</th>
+            <th>No.</th>
             <th>
-              <p>名前</p>
-              <p>画像</p>
+              <p>Name</p>
+              <p>Image</p>
             </th>
-            <th>容量(byte)</th>
+            <th>File Size[byte]</th>
             <th>&nbsp;</th>
           </tr>
         </thead>
@@ -22,8 +22,8 @@
             </td>
             <td>{{img.size}}</td>
             <td>
-              <p><button @click="exportImage(img)">エクスポート</button></p>
-              <p><button @click="importImage(img)">インポート</button></p>
+              <p><button @click="exportImage(img)">{{$t('exportImage')}}</button></p>
+              <p><button @click="importImage(img)">{{$t('importImage')}}</button></p>
             </td>
           </tr>
         </tbody>

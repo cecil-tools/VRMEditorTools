@@ -4,7 +4,7 @@
       <FileUpload :changeFile="changeFile" />
       <VRMView ref="vrmview" :path="path" :debug="false" />
       <div>
-        <label for="btnExport">VRMファイルを出力</label>
+        <label for="btnExport">{{$t('btnExport')}}</label>
         <input id="btnExport" type="button" @click="clickExport" />
       </div>
     </div>
