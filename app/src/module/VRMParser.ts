@@ -272,7 +272,7 @@ class VRMParser {
         })
     }
 
-    // 一人称視点の視点の位置を取得
+    // 一人称視点の視点のオフセット位置を取得
     // json.extensions.VRM.firstPerson
     public static getFirstPersonBoneOffset = (): {x: number, y: number, z: number} => {
         const extVRM = VRMParser.json.extensions.VRM
@@ -281,7 +281,7 @@ class VRMParser {
         return  extVRM.firstPerson.firstPersonBoneOffset
     }
 
-    // 一人称視点の視点の位置を設定
+    // 一人称視点の視点のオフセット位置を設定
     public static setFirstPersonBoneOffset = (position: {x: number, y: number, z: number}) => {
         const extVRM = VRMParser.json.extensions.VRM
         extVRM.firstPerson.firstPersonBoneOffset.x = position.x
@@ -301,7 +301,7 @@ class VRMParser {
             + VRMParser.CHUNK_LENGTH_SIZE 
             + VRMParser.CHUNK_TYPE_SIZE 
             + VRMParser.chunk1.chunkLength
-            
+
         console.log('firstPersonBoneOffset', extVRM)
     }
 
