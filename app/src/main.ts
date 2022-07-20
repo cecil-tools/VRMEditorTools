@@ -10,6 +10,8 @@ Vue.use(vb)
 
 import i18n from '@/languages'
 
+import analytics from '@/analytics'
+
 new Vue({
   i18n,
   router,
