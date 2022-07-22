@@ -83,7 +83,7 @@ export default class VRMParserView extends Vue {
   drawVrm: (file: File) => void
 
   @Prop()
-  drawFirstPerson: (firstPerson: any) => void
+  drawFirstPerson: (offset: any, firstPerson: any) => void
 
   vrmImages: any[] = []
   
@@ -107,8 +107,20 @@ export default class VRMParserView extends Vue {
 
       // 一人称視点の位置を取得
       this.firstPerson = VRMParser.getFirstPersonBone()
-      console.log('firstPerson', this.firstPerson)
-      this.drawFirstPerson(this.firstPerson)
+      // console.log('firstPerson', this.firstPerson)
+
+      const nodes = VRMParser.json.nodes
+      const headBone = nodes[this.firstPerson.firstPersonBone]      
+      console.log('offset', headBone.translation)
+
+      this.drawFirstPerson({
+          id: this.firstPerson.firstPersonBone,
+          name: headBone.name,
+          x: headBone.translation[0],
+          y: headBone.translation[1],
+          z: headBone.translation[2]
+        },
+        this.firstPerson)
     })
   }
 

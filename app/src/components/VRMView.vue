@@ -77,7 +77,7 @@ export default class VRMView extends Vue {
         })[0]
         console.log('node', node)
 
-        // Armature を 取り出す
+        // セシル系で服がズレるので Armature を 取り出して hips 位置を調整
         if (node) {
           const armature = node._children.filter((c: any) => {
             return (c.name == 'Armature')
@@ -98,10 +98,35 @@ export default class VRMView extends Vue {
       })
   }
 
-  drawFirstPerson(firstPerson: any) {
-    console.log('drawFirstPerson', firstPerson)
-    // lookAtTypeName
-    // firstPersonBone
+  drawFirstPerson(offset: any, firstPerson: any) {
+    const firstPersonBoneOffset = firstPerson.firstPersonBoneOffset
+    console.log('drawFirstPerson', offset, firstPersonBoneOffset)
+    // TODO うまく表示位置が調整できないので コメントアウト
+    /*
+    const headBone = this._scene.getBoneById(`${offset.name}`)
+    console.log('_scene', this._scene)
+    console.log('headBone', headBone)    
+
+    // 球体メッシュを生成
+    const scale = 0.08
+    const sphere = BABYLON.MeshBuilder.CreateSphere('firstPerson', 
+      {diameter: scale}, this._scene)
+
+    // const position = headBone.getPosition(BABYLON.Space.LOCAL)
+    // console.log('position', position)
+    sphere.position.x = offset.x + firstPersonBoneOffset.x
+    sphere.position.y = offset.y + firstPersonBoneOffset.y
+    sphere.position.z = offset.z + firstPersonBoneOffset.z
+    console.log('sphere.position', sphere.position)
+
+
+    // 球体の色を設定
+    const materialSphere1 = new BABYLON.StandardMaterial("texture1", this._scene);
+    materialSphere1.alpha = 1;
+    materialSphere1.diffuseColor = BABYLON.Color3.Red();
+
+    sphere.material = materialSphere1;
+    */  
   }
 }
 </script>
