@@ -9,8 +9,6 @@ import { Component, Vue, Prop } from 'vue-property-decorator'
 import * as BABYLON from 'babylonjs'
 import 'babylonjs-loaders'
 import 'babylon-vrm-loader'
-import { MToonMaterial } from 'babylon-mtoon-material'
-import { GLTF2Export, IExportOptions } from 'babylonjs-serializers'
 
 @Component({
   components: {
@@ -26,12 +24,6 @@ export default class VRMView extends Vue {
   @Prop()
   path!: string
  
-  /*
-  mounted() {
-    this.initScene();    
-  }
-  */
-
   initScene() {
     if (this._scene){
       // Releases all held resources
@@ -69,7 +61,6 @@ export default class VRMView extends Vue {
     });    
   }
 
-  
   // VRM 読み込み
   async drawVrm(sceneFilename: string | File) {
     console.log('drawVrm', sceneFilename)
@@ -107,23 +98,11 @@ export default class VRMView extends Vue {
       })
   }
 
-  /*
-  downloadFile() {
-    console.log('downloadFile')
-
-    // this._scene.activeCamera.isEnabled = false
-
-    const options: IExportOptions = {
-      exportUnusedUVs: false,
-      exportWithoutWaitingForScene: false,
-      includeCoordinateSystemConversionNodes: false
-    }
-    GLTF2Export.GLBAsync(this._scene, "out", options)
-      .then((glb: any) => {
-        glb.downloadFiles()
-      })
+  drawFirstPerson(firstPerson: any) {
+    console.log('drawFirstPerson', firstPerson)
+    // lookAtTypeName
+    // firstPersonBone
   }
-  */
 }
 </script>
 
@@ -133,6 +112,5 @@ export default class VRMView extends Vue {
     height: 400px;
 
     background-color: gray;
-    /* border: 1px solid red; */
   }
 </style>

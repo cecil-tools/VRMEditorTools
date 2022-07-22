@@ -47,15 +47,15 @@
         <tbody>
           <tr>
             <th>x</th>
-            <td><input type="number" v-model="firstPerson.x"></td>
+            <td><input type="number" v-model.number="firstPerson.firstPersonBoneOffset.x"></td>
           </tr>
           <tr>
             <th>y</th>
-            <td><input type="number" v-model="firstPerson.y"></td>
+            <td><input type="number" v-model.number="firstPerson.firstPersonBoneOffset.y"></td>
           </tr>
           <tr>
             <th>z</th>
-            <td><input type="number" v-model="firstPerson.z"></td>
+            <td><input type="number" v-model.number="firstPerson.firstPersonBoneOffset.z"></td>
           </tr>
         </tbody>
         <tfoot>
@@ -82,17 +82,16 @@ export default class VRMParserView extends Vue {
   @Prop() 
   drawVrm: (file: File) => void
 
+  @Prop()
+  drawFirstPerson: (firstPerson: any) => void
+
   vrmImages: any[] = []
   
   // タブ切り替え
   selectTabType = "tab_images"
 
   // 視点位置
-  firstPerson = {
-    x: 0.0,
-    y: 0.0,
-    z: 0.0
-  }
+  firstPerson: any
 
   parse(selectVrmFile: File) {
     console.log('VRMParserView parse', selectVrmFile)
@@ -107,10 +106,9 @@ export default class VRMParserView extends Vue {
       console.log('vrmImages', this.vrmImages)
 
       // 一人称視点の位置を取得
-      this.firstPerson = VRMParser.getFirstPersonBoneOffset()
+      this.firstPerson = VRMParser.getFirstPersonBone()
       console.log('firstPerson', this.firstPerson)
-      // position.y = 100.0
-      // VRMParser.setFirstPersonBoneOffset(this.firstPerson)
+      this.drawFirstPerson(this.firstPerson)
     })
   }
 
@@ -196,7 +194,7 @@ export default class VRMParserView extends Vue {
 
   clickUpdateFirstPerson() {
     console.log('firstPerson', this.firstPerson)
-    VRMParser.setFirstPersonBoneOffset(this.firstPerson)
+    VRMParser.setFirstPersonBoneOffset(this.firstPerson.firstPersonBoneOffset)
   }
 }
 </script>

@@ -9,7 +9,7 @@
       </div>
     </div>
     <div class="container vrmparserContainer">
-      <VRMParserView ref="vrmparser" :drawVrm="drawVrm"/>
+      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" />
     </div>
 </div>
 </template>
@@ -60,6 +60,11 @@ export default class Main extends Vue {
   drawVrm(file: File) {
     const vrmview = this.$refs.vrmview as VRMView
     vrmview.drawVrm( file )
+  }
+
+  drawFirstPerson(firstPerson: any) {
+    const vrmview = this.$refs.vrmview as VRMView
+    vrmview.drawFirstPerson(firstPerson)
   }
 }
 </script>

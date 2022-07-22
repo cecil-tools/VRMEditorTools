@@ -274,11 +274,11 @@ class VRMParser {
 
     // 一人称視点の視点のオフセット位置を取得
     // json.extensions.VRM.firstPerson
-    public static getFirstPersonBoneOffset = (): {x: number, y: number, z: number} => {
+    public static getFirstPersonBone = (): {firstPerson: any} => {
         const extVRM = VRMParser.json.extensions.VRM
         console.log('extVRM', extVRM)
-        console.log('firstPersonBoneOffset', extVRM.firstPerson.firstPersonBoneOffset)
-        return  extVRM.firstPerson.firstPersonBoneOffset
+        console.log('firstPerson', extVRM.firstPerson)
+        return  extVRM.firstPerson
     }
 
     // 一人称視点の視点のオフセット位置を設定
