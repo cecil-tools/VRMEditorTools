@@ -1,6 +1,13 @@
 <template>
   <div class="vrmparserview">
-    <div>
+    <!-- TABメニュー -->
+    <div id="tab">
+      <ul class="tabMenu">
+        <li @click="clickSelectTab('tab_images')">{{$t('tabImages')}}</li>
+        <li @click="clickSelectTab('tab_first_person')">{{$t('tabFirstPerson')}}</li>
+      </ul>
+    </div>
+    <div class="tabContents" v-if="selectTabType == 'tab_images'">
       <table class="table">
         <thead>
           <tr>
@@ -29,6 +36,38 @@
         </tbody>
       </table>
     </div>
+    <div class="tabContents tabFirstPerson" v-if="selectTabType == 'tab_first_person'">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>item</th>
+            <th>value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>x</th>
+            <td><input type="number" v-model="firstPerson.x"></td>
+          </tr>
+          <tr>
+            <th>y</th>
+            <td><input type="number" v-model="firstPerson.y"></td>
+          </tr>
+          <tr>
+            <th>z</th>
+            <td><input type="number" v-model="firstPerson.z"></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2">
+              <label for="btnUpdateFirstPerson">{{$t('updateFirstPerson')}}</label>
+              <input id="btnUpdateFirstPerson" type='button' @click="clickUpdateFirstPerson" value="save">
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -44,6 +83,16 @@ export default class VRMParserView extends Vue {
   drawVrm: (file: File) => void
 
   vrmImages: any[] = []
+  
+  // タブ切り替え
+  selectTabType = "tab_images"
+
+  // 視点位置
+  firstPerson = {
+    x: 0.0,
+    y: 0.0,
+    z: 0.0
+  }
 
   parse(selectVrmFile: File) {
     console.log('VRMParserView parse', selectVrmFile)
@@ -57,10 +106,11 @@ export default class VRMParserView extends Vue {
       this.vrmImages.push(...images)
       console.log('vrmImages', this.vrmImages)
 
-      // 一人称視点の位置を修正
-      const position = VRMParser.getFirstPersonBoneOffset()
+      // 一人称視点の位置を取得
+      this.firstPerson = VRMParser.getFirstPersonBoneOffset()
+      console.log('firstPerson', this.firstPerson)
       // position.y = 100.0
-      VRMParser.setFirstPersonBoneOffset(position)
+      // VRMParser.setFirstPersonBoneOffset(this.firstPerson)
     })
   }
 
@@ -138,10 +188,20 @@ export default class VRMParserView extends Vue {
         console.error('error', e)
       })
   }
+
+  clickSelectTab(type: string) {
+    console.log('clickSelectTab', type)
+    this.selectTabType = type 
+  }
+
+  clickUpdateFirstPerson() {
+    console.log('firstPerson', this.firstPerson)
+    VRMParser.setFirstPersonBoneOffset(this.firstPerson)
+  }
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
   .table {
     margin: 0 auto;
     width: 100%;
@@ -149,6 +209,7 @@ export default class VRMParserView extends Vue {
   }
   .table thead {
     background-color: lightslategray;
+    height: 60px;
   }
   .table thead p, .table tbody p {
     margin: 5px auto;
@@ -166,5 +227,51 @@ export default class VRMParserView extends Vue {
     display: block;
     width: 60px;
     margin: 0 auto;
+  }
+  
+  $green: #007db9;
+  $white: #fff;
+
+  #tab {
+    width: 100%;
+    max-width: 500px;
+
+    .tabMenu {
+      display: flex;
+      padding-left: 3px;
+      margin: 0;
+
+      li {
+        display: inline;
+        width: auto;
+        padding: 10px 20px;
+        color: $white;
+        border-right: 1px solid $white;
+        background-color: $green;
+        cursor: pointer;
+              
+        &:last-child {
+          border-right: none;
+        }
+      }      
+    }
+  }
+  .tabFirstPerson {
+    label {
+      font-size: large;
+      border: solid 3px #AAAAAA;
+      background-color: #F0F0F0;
+      display: block;
+      width: 90%;
+      margin: 5px auto;
+      transition: .3s;
+    }
+    label:hover {
+      background-color: #AAAAAA;
+    }
+
+    input[type="button"] {
+      display:none; 
+    }
   }
 </style>

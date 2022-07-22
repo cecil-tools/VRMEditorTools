@@ -3,5 +3,8 @@ export default {
     btnFileSelect: 'Select VRM file',
     btnExport: 'Output VRM files',
     exportImage: 'Download Image',
-    importImage: 'Upload Image'
+    importImage: 'Upload Image',
+    tabImages: 'images',
+    tabFirstPerson: 'FirstPersonOffset',
+    updateFirstPerson: 'UpdateFirstPersonOffset'   
 }
