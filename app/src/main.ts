@@ -12,9 +12,9 @@ import i18n from '@/languages'
 
 import analytics from '@/analytics'
 
-new Vue({
+new Vue({  
   i18n,
   router,
-  store,  
+  store,
   render: h => h(App)
 }).$mount('#app')
