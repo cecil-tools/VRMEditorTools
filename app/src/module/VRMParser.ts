@@ -192,7 +192,7 @@ class VRMParser {
         })
     }
 
-    // json(chunk0), chunk1 を再構築する
+    // テクスチャを置き換えて json(chunk0), chunk1 を再構築する
     public static replaceImage = (img: any, fileBuf: ArrayBuffer): Promise<void> => {
         console.log('replaceImage', img, fileBuf)
         
