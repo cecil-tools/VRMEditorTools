@@ -83,11 +83,22 @@ export default class VRMView extends Vue {
             return (c.name == 'Armature')
           })[0]
           console.log('Armature', armature)
-          const hips = armature._children.filter((c: any) => {
-            return (c.name == 'Hips')
-          })[0]
-          console.log('Hips', hips)
-          hips.position.y = 0.0
+          if (armature){
+            const hips = armature._children.filter((c: any) => {
+              return (c.name == 'Hips')
+            })[0]
+            console.log('Hips', hips)
+            if (hips) {
+              hips.position.y = 0.0
+              const boneRoot = hips._children.filter((c: any) => {
+                return (c.name == 'BoneRoot191')
+              })[0]
+              console.log('boneRoot', boneRoot)
+              if (boneRoot) {
+                boneRoot.position.y = 0.0
+              }
+            }
+          }
         }
 
         console.log('meshes', scene.meshes)
