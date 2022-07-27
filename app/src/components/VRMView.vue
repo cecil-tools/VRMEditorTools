@@ -79,24 +79,48 @@ export default class VRMView extends Vue {
 
         // セシル系で服がズレるので Armature を 取り出して hips 位置を調整
         if (node) {
+          // TODO "Cecil"
           const armature = node._children.filter((c: any) => {
             return (c.name == 'Armature')
           })[0]
           console.log('Armature', armature)
           if (armature){
+            // Hips
             const hips = armature._children.filter((c: any) => {
               return (c.name == 'Hips')
             })[0]
             console.log('Hips', hips)
             if (hips) {
               hips.position.y = 0.0
+              // Hips -> BoneRootXXX
               const boneRoot = hips._children.filter((c: any) => {
-                return (c.name == 'BoneRoot191')
+                return (c.name.indexOf('BoneRoot') != -1)
               })[0]
               console.log('boneRoot', boneRoot)
               if (boneRoot) {
                 boneRoot.position.y = 0.0
               }
+              /*
+              //Hips -> Spine -> Spine1 -> Spine2 -> Neck -> Head -> KamiAll -> KamiMakerDRoot
+              const kamiAll = hips._children.filter((c: any) => {
+                return (c.name == 'Spine')
+              })[0]._children.filter((c: any) => {
+                return (c.name == 'Spine1')
+              })[0]._children.filter((c: any) => {
+                return (c.name == 'Spine2')
+              })[0]._children.filter((c: any) => {
+                return (c.name == 'Neck')
+              })[0]._children.filter((c: any) => {
+                return (c.name == 'Head')
+              })[0]._children.filter((c: any) => {
+                return (c.name == 'KamiAll')
+              })[0]
+              console.log('kamiAll', kamiAll)
+              if (kamiAll) {
+                console.log('kamiAll -> position', kamiAll.position)
+                kamiAll.position.y = 0.4
+              }
+              */
             }
           }
         }

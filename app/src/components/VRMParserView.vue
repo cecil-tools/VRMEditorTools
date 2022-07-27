@@ -108,20 +108,28 @@ export default class VRMParserView extends Vue {
       // 一人称視点の位置を取得
       this.firstPerson = VRMParser.getFirstPersonBone()
       // console.log('firstPerson', this.firstPerson)
+      if (this.firstPerson && this.firstPerson.firstPersonBone != -1) {
+        const nodes = VRMParser.json.nodes
+        const headBone = nodes[this.firstPerson.firstPersonBone]
+        console.log('headBone', headBone)      
+        if (headBone) {
+          console.log('offset', headBone.translation)
 
-      const nodes = VRMParser.json.nodes
-      const headBone = nodes[this.firstPerson.firstPersonBone]      
-      console.log('offset', headBone.translation)
+          this.drawFirstPerson({
+              id: this.firstPerson.firstPersonBone,
+              name: headBone.name,
+              x: headBone.translation[0],
+              y: headBone.translation[1],
+              z: headBone.translation[2]
+            },
+            this.firstPerson)
+        }
+      }
 
-      this.drawFirstPerson({
-          id: this.firstPerson.firstPersonBone,
-          name: headBone.name,
-          x: headBone.translation[0],
-          y: headBone.translation[1],
-          z: headBone.translation[2]
-        },
-        this.firstPerson)
+      // TODO 頭にアクセサリを追加してみる
+      // VRMParser.addHeadAccessory()        
     })
+
   }
 
   // 画像ファイル ダウンロード

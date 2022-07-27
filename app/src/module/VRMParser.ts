@@ -1,3 +1,5 @@
+import { async } from "@firebase/util"
+
 /** VRMParser
  *  VRMの解析とテクスチャ置き換え等の機能をもつ
  * 
@@ -193,32 +195,8 @@ class VRMParser {
     }
 
     // json(chunk0), chunk1 を再構築する
-    public static chunkRebuilding = (distChunkDataList: any[]): Promise<void> => {
+    public static chunkRebuilding = (): Promise<void> => {
         return new Promise((resolve, reject) => {
-            // distChunkDataList byteOffset を書き換える
-            let byteOffset = 0;
-            distChunkDataList.forEach((v: any, i: number, src: any[]) => {
-                src[i].byteOffset = byteOffset
-                byteOffset += v.byteLength
-            })
-            console.log('distChunkDataList', distChunkDataList)
-
-            // distChunkDataList を元に chunk1 を作成する
-            // byteOffset は byteLength            
-            VRMParser.chunk1.chunkData = new Uint8Array(byteOffset)
-            distChunkDataList.forEach( (v: any) => {
-                VRMParser.chunk1.chunkData.set(v.src, v.byteOffset)
-            })
-            VRMParser.chunk1.chunkLength = VRMParser.chunk1.chunkData.length
-            console.log('chunk1', VRMParser.chunk1)
-
-            // json.bufferViews 位置の byteOffset, byteLength 書き換え
-            VRMParser.json.bufferViews.forEach((v: any, i: number, src: any[]) => { 
-                const data = distChunkDataList[i]
-                src[i].byteLength = data.byteLength
-                src[i].byteOffset = data.byteOffset
-            })
-
             // json.buffers[0].byteLength も更新
             VRMParser.json.buffers[0].byteLength = VRMParser.chunk1.chunkLength
 
@@ -266,7 +244,7 @@ class VRMParser {
                     src: buf
                 })
                 byteOffset += blob.size
-            })            
+            })
             // console.log('images', VRMParser.json.images)
             // 名前が一致する json.images を取り出す
             const image = VRMParser.json.images.filter((v: any) => (v.name == img.name))[0]
@@ -278,8 +256,32 @@ class VRMParser {
             distChunkDataList[distChunkDataListIndex].blob = new Blob([fileBuf])
             distChunkDataList[distChunkDataListIndex].src = new Uint8Array(fileBuf)
             
+            // distChunkDataList byteOffset を書き換える
+            byteOffset = 0;
+            distChunkDataList.forEach((v: any, i: number, src: any[]) => {
+                src[i].byteOffset = byteOffset
+                byteOffset += v.byteLength
+            })
+            console.log('distChunkDataList', distChunkDataList)
+
+            // distChunkDataList を元に chunk1 を作成する
+            // byteOffset は byteLength            
+            VRMParser.chunk1.chunkData = new Uint8Array(byteOffset)
+            distChunkDataList.forEach( (v: any) => {
+                VRMParser.chunk1.chunkData.set(v.src, v.byteOffset)
+            })
+            VRMParser.chunk1.chunkLength = VRMParser.chunk1.chunkData.length
+            console.log('chunk1', VRMParser.chunk1)
+
+            // json.bufferViews 位置の byteOffset, byteLength 書き換え
+            VRMParser.json.bufferViews.forEach((v: any, i: number, src: any[]) => { 
+                const data = distChunkDataList[i]
+                src[i].byteLength = data.byteLength
+                src[i].byteOffset = data.byteOffset
+            })
+
             // json(chunk0), chunk1 を再構築する
-            return VRMParser.chunkRebuilding(distChunkDataList)
+            return VRMParser.chunkRebuilding()
                 .then(() => {
                     resolve()
                 })
@@ -373,6 +375,22 @@ class VRMParser {
 
             resolve(new File([data], VRMParser.filename!))
         })
+    }
+
+    // ダウンロードしてみる
+    private static downloadBlob(file: File) {
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(file)
+        link.download = file.name
+        link.click()
+    }
+    
+    // TODO 頭にアクセサリを追加してみる
+    public static addHeadAccessory = (): Promise<void> => {
+        console.log('addAccessory')
+        return new Promise((resolve, reject) => {
+            resolve()
+        })      
     }
 }
 
