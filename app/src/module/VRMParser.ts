@@ -389,6 +389,11 @@ class VRMParser {
     public static addHeadAccessory = (): Promise<void> => {
         console.log('addAccessory')
         return new Promise((resolve, reject) => {
+            // json を 編集する
+            // meshes に Accessory meshe 情報を追加
+            // nodes に Accessory meshe を追加 
+            // nodes -> Head の children に Accessory meshe の インデックス追加
+            
             resolve()
         })      
     }

@@ -83,7 +83,7 @@ export default class VRMParserView extends Vue {
   drawVrm: (file: File) => void
 
   @Prop()
-  drawFirstPerson: (offset: any, firstPerson: any) => void
+  drawFirstPerson: (nodes: any, firstPerson: any) => void
 
   vrmImages: any[] = []
   
@@ -110,20 +110,7 @@ export default class VRMParserView extends Vue {
       // console.log('firstPerson', this.firstPerson)
       if (this.firstPerson && this.firstPerson.firstPersonBone != -1) {
         const nodes = VRMParser.json.nodes
-        const headBone = nodes[this.firstPerson.firstPersonBone]
-        console.log('headBone', headBone)      
-        if (headBone) {
-          console.log('offset', headBone.translation)
-
-          this.drawFirstPerson({
-              id: this.firstPerson.firstPersonBone,
-              name: headBone.name,
-              x: headBone.translation[0],
-              y: headBone.translation[1],
-              z: headBone.translation[2]
-            },
-            this.firstPerson)
-        }
+        this.drawFirstPerson(nodes, this.firstPerson)        
       }
 
       // TODO 頭にアクセサリを追加してみる

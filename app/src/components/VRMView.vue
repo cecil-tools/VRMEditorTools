@@ -133,35 +133,28 @@ export default class VRMView extends Vue {
       })
   }
 
-  drawFirstPerson(offset: any, firstPerson: any) {
+  // firstPersonBoneOffset 位置に球体を表示数する
+  drawFirstPerson(nodes: any, firstPerson: any) {
+    console.log('drawFirstPerson', nodes,)
+
+    const firstPersonBone = nodes[firstPerson.firstPersonBone]
     const firstPersonBoneOffset = firstPerson.firstPersonBoneOffset
-    console.log('drawFirstPerson', offset, firstPersonBoneOffset)
-    // TODO うまく表示位置が調整できないので コメントアウト
-    /*
-    const headBone = this._scene.getBoneById(`${offset.name}`)
-    console.log('_scene', this._scene)
-    console.log('headBone', headBone)    
+    console.log('firstPersonBone', firstPersonBone)
+    console.log('firstPersonBoneOffset', firstPersonBoneOffset)
 
     // 球体メッシュを生成
-    const scale = 0.08
-    const sphere = BABYLON.MeshBuilder.CreateSphere('firstPerson', 
-      {diameter: scale}, this._scene)
-
-    // const position = headBone.getPosition(BABYLON.Space.LOCAL)
-    // console.log('position', position)
-    sphere.position.x = offset.x + firstPersonBoneOffset.x
-    sphere.position.y = offset.y + firstPersonBoneOffset.y
-    sphere.position.z = offset.z + firstPersonBoneOffset.z
-    console.log('sphere.position', sphere.position)
-
+    const scale = 0.03
+    const sphere = BABYLON.MeshBuilder.CreateSphere('firstPerson', {diameter: scale}, this._scene)
 
     // 球体の色を設定
-    const materialSphere1 = new BABYLON.StandardMaterial("texture1", this._scene);
-    materialSphere1.alpha = 1;
-    materialSphere1.diffuseColor = BABYLON.Color3.Red();
+    const materialSphere1 = new BABYLON.StandardMaterial("texture1", this._scene)
+    materialSphere1.diffuseColor = BABYLON.Color3.Red()
+    sphere.material = materialSphere1
 
-    sphere.material = materialSphere1;
-    */  
+    // TODO 球体の位置を調整する
+    sphere.position.x = 0
+    sphere.position.y = 0
+    sphere.position.z = 0
   }
 }
 </script>
