@@ -38,6 +38,18 @@ export default class Main extends Vue {
     // VRM 読み込み
     const vrmview = this.$refs.vrmview as VRMView
     vrmview.drawVrm( this.path )
+      .then(() => {
+        fetch(this.path)
+          .then((res) => res.blob())
+          .then(blob => {            
+            // VRMパース
+            const vrmparser = this.$refs.vrmparser as VRMParserView    
+            vrmparser.parse( new File([blob], 'vrm') )
+          })
+      })
+      .catch((e) => {
+        console.log(e)
+      })
   }
 
   changeFile(event: any) {
@@ -46,10 +58,18 @@ export default class Main extends Vue {
     // VRM 読み込み
     const vrmview = this.$refs.vrmview as VRMView
     vrmview.drawVrm( this.selectVrmFile! )
-
-    // VRMパース
-    const vrmparser = this.$refs.vrmparser as VRMParserView    
-    vrmparser.parse( this.selectVrmFile! )
+      .then(() => {
+        // VRMパース
+        const vrmparser = this.$refs.vrmparser as VRMParserView    
+        vrmparser.parse( this.selectVrmFile! )
+          .then((json) => {
+            // カメラ位置を調整する
+            vrmview.setCameraTarget(json);
+          })
+      })
+      .catch((e) => {
+        console.log(e)
+      })
   }
 
   clickExport() {

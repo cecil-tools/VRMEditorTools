@@ -93,29 +93,33 @@ export default class VRMParserView extends Vue {
   // 視点位置
   firstPerson: any
 
-  parse(selectVrmFile: File) {
-    console.log('VRMParserView parse', selectVrmFile)
-    if (selectVrmFile == null) {
-      return
-    }
-
-    //VRM パース
-    VRMParser.parse(selectVrmFile, (json: any, images: any[]) => {
-      this.vrmImages.splice(0, this.vrmImages.length)
-      this.vrmImages.push(...images)
-      console.log('vrmImages', this.vrmImages)
-
-      // 一人称視点の位置を取得
-      this.firstPerson = VRMParser.getFirstPersonBone()
-      // console.log('firstPerson', this.firstPerson)
-      if (this.firstPerson && this.firstPerson.firstPersonBone != -1) {
-        this.drawFirstPerson(VRMParser.json)
+  parse(selectVrmFile: File): Promise<any> {
+    return new Promise((resolve, reject) => {
+      console.log('VRMParserView parse', selectVrmFile)
+      if (selectVrmFile == null) {
+        reject()
+        return
       }
 
-      // TODO 頭にアクセサリを追加してみる
-      // VRMParser.addHeadAccessory()        
-    })
+      //VRM パース
+      VRMParser.parse(selectVrmFile, (json: any, images: any[]) => {
+        this.vrmImages.splice(0, this.vrmImages.length)
+        this.vrmImages.push(...images)
+        console.log('vrmImages', this.vrmImages)
 
+        // 一人称視点の位置を取得
+        this.firstPerson = VRMParser.getFirstPersonBone()
+        // console.log('firstPerson', this.firstPerson)
+        if (this.firstPerson && this.firstPerson.firstPersonBone != -1) {
+          this.drawFirstPerson(VRMParser.json)
+        }
+
+        // TODO 頭にアクセサリを追加してみる
+        // VRMParser.addHeadAccessory()
+
+        resolve(VRMParser.json);      
+      })
+    });
   }
 
   // 画像ファイル ダウンロード
