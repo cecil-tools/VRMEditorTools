@@ -134,11 +134,12 @@ export default class VRMView extends Vue {
   }
 
   // firstPersonBoneOffset 位置に球体を表示数する
-  drawFirstPerson(nodes: any, firstPerson: any) {
-    console.log('drawFirstPerson', nodes,)
+  drawFirstPerson(vrmJson: any) {
+    console.log('drawFirstPerson', vrmJson)
 
-    const firstPersonBone = nodes[firstPerson.firstPersonBone]
-    const firstPersonBoneOffset = firstPerson.firstPersonBoneOffset
+    const extVRM = vrmJson.extensions.VRM
+    const firstPersonBone = vrmJson.nodes[extVRM.firstPerson.firstPersonBone]
+    const firstPersonBoneOffset = extVRM.firstPerson.firstPersonBoneOffset
     console.log('firstPersonBone', firstPersonBone)
     console.log('firstPersonBoneOffset', firstPersonBoneOffset)
 

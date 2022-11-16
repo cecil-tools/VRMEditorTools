@@ -62,9 +62,9 @@ export default class Main extends Vue {
     vrmview.drawVrm( file )
   }
 
-  drawFirstPerson(nodes: any, firstPerson: any) {
+  drawFirstPerson(vrmJson: any) {
     const vrmview = this.$refs.vrmview as VRMView
-    vrmview.drawFirstPerson(nodes, firstPerson)
+    vrmview.drawFirstPerson(vrmJson)
   }
 }
 </script>

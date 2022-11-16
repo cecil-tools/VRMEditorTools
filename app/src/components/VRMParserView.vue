@@ -83,7 +83,7 @@ export default class VRMParserView extends Vue {
   drawVrm: (file: File) => void
 
   @Prop()
-  drawFirstPerson: (nodes: any, firstPerson: any) => void
+  drawFirstPerson: (vrmJson: any) => void
 
   vrmImages: any[] = []
   
@@ -109,8 +109,7 @@ export default class VRMParserView extends Vue {
       this.firstPerson = VRMParser.getFirstPersonBone()
       // console.log('firstPerson', this.firstPerson)
       if (this.firstPerson && this.firstPerson.firstPersonBone != -1) {
-        const nodes = VRMParser.json.nodes
-        this.drawFirstPerson(nodes, this.firstPerson)        
+        this.drawFirstPerson(VRMParser.json)
       }
 
       // TODO 頭にアクセサリを追加してみる
