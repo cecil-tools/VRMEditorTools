@@ -148,12 +148,12 @@ export default class VRMView extends Vue {
       return (n.name == firstPersonBone.name)
     })[0]
     const position = {
-      x: transformNode.absolutePosition.x + firstPersonBoneOffset.x,
+      x: transformNode.absolutePosition.x + firstPersonBoneOffset.x * -1.0,
       y: transformNode.absolutePosition.y + firstPersonBoneOffset.y,
       z: transformNode.absolutePosition.z + firstPersonBoneOffset.z
     }
     console.log('firstPersonBone position', position)
-    const sphere = this.createSphere('firstPerson', position, BABYLON.Color3.Red(), 0.05)
+    // const sphere = this.createSphere('firstPerson', position, BABYLON.Color3.Red(), 0.05)
     // TODO firstPerson sphere を gizmos 表示する
 
     /*
