@@ -246,8 +246,9 @@ class VRMParser {
                 byteOffset += blob.size
             })
             // console.log('images', VRMParser.json.images)
-            // 名前が一致する json.images を取り出す
-            const image = VRMParser.json.images.filter((v: any) => (v.name == img.name))[0]
+            // index が 一致する json.images を取り出す
+            const image = VRMParser.json.images[img.index]
+
             // console.log('image', image)
             const distChunkDataListIndex = image.bufferView
 
