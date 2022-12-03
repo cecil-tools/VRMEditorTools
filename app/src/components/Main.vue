@@ -67,18 +67,18 @@ export default class Main extends Vue {
   drawVrm(file: File) {
     const vrmview = this.$refs.vrmview as VRMView
     vrmview.drawVrm( file )
-    .then(() => {
-        // VRMパース
-        const vrmparser = this.$refs.vrmparser as VRMParserView    
-        vrmparser.parse( this.selectVrmFile! )
-          .then((json) => {
-            // カメラ位置を調整する
-            vrmview.setCameraTarget(json);
-          })
-      })
-      .catch((e) => {
-        console.log(e)
-      })
+      .then(() => {
+          // VRMパース
+          const vrmparser = this.$refs.vrmparser as VRMParserView    
+          vrmparser.parse( file )
+            .then((json) => {
+              // カメラ位置を調整する
+              vrmview.setCameraTarget(json);
+            })
+        })
+        .catch((e) => {
+          console.log(e)
+        })
   }
 
   drawFirstPerson(vrmJson: any) {
