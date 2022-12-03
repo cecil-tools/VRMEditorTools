@@ -56,9 +56,18 @@ export default class Main extends Vue {
     console.log('changeFile', event)
     this.selectVrmFile = event.target.files[0]
     // VRM 読み込み
+    this.drawVrm( this.selectVrmFile! )
+  }
+
+  clickExport() {
+    const vrmparser = this.$refs.vrmparser as VRMParserView
+    vrmparser.downloadFile()
+  }
+
+  drawVrm(file: File) {
     const vrmview = this.$refs.vrmview as VRMView
-    vrmview.drawVrm( this.selectVrmFile! )
-      .then(() => {
+    vrmview.drawVrm( file )
+    .then(() => {
         // VRMパース
         const vrmparser = this.$refs.vrmparser as VRMParserView    
         vrmparser.parse( this.selectVrmFile! )
@@ -70,16 +79,6 @@ export default class Main extends Vue {
       .catch((e) => {
         console.log(e)
       })
-  }
-
-  clickExport() {
-    const vrmparser = this.$refs.vrmparser as VRMParserView
-    vrmparser.downloadFile()
-  }
-
-  drawVrm(file: File) {
-    const vrmview = this.$refs.vrmview as VRMView
-    vrmview.drawVrm( file )
   }
 
   drawFirstPerson(vrmJson: any) {
