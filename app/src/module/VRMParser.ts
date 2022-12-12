@@ -247,7 +247,12 @@ class VRMParser {
             })
             // console.log('images', VRMParser.json.images)
             // index が 一致する json.images を取り出す
-            const image = VRMParser.json.images[img.index]
+            let image = VRMParser.json.images[img.index]
+            if (typeof image == 'undefined') {
+                // 名前が一致する json.images を取り出す
+                image = VRMParser.json.images.filter((v: any) => (v.name == img.name))[0]
+            }
+            console.log('-- image', image)
 
             // console.log('image', image)
             const distChunkDataListIndex = image.bufferView
