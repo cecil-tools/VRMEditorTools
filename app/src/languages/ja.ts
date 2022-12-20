@@ -6,5 +6,6 @@ export default {
     importImage: 'アップロード',
     tabImages: '画像一覧',
     tabFirstPerson: '視点位置調整',
-    updateFirstPerson: '視点位置を更新'
+    updateFirstPerson: '視点位置を更新',
+    tabVroid: 'VRoid向け'
 }

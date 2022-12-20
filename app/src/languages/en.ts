@@ -6,5 +6,6 @@ export default {
     importImage: 'Upload Image',
     tabImages: 'images',
     tabFirstPerson: 'FirstPersonOffset',
-    updateFirstPerson: 'UpdateFirstPersonOffset'   
+    updateFirstPerson: 'UpdateFirstPersonOffset',
+    tabVroid: 'For VRoid'
 }
