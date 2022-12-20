@@ -307,12 +307,23 @@ class VRMParser {
     }
 
     // 一人称視点の視点のオフセット位置を設定
-    public static setFirstPersonBoneOffset = (position: {x: number, y: number, z: number}) => {
-        const extVRM = VRMParser.json.extensions.VRM
-        extVRM.firstPerson.firstPersonBoneOffset.x = position.x
-        extVRM.firstPerson.firstPersonBoneOffset.y = position.y
-        extVRM.firstPerson.firstPersonBoneOffset.z = position.z
+    public static setFirstPersonBoneOffset = (position: {x: number, y: number, z: number}): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            const extVRM = VRMParser.json.extensions.VRM
+            extVRM.firstPerson.firstPersonBoneOffset.x = position.x
+            extVRM.firstPerson.firstPersonBoneOffset.y = position.y
+            extVRM.firstPerson.firstPersonBoneOffset.z = position.z
 
+            return VRMParser.chunkRebuilding()
+                .then(() => {
+                    resolve()
+                })
+                .catch(e => {
+                    console.error('error', e)
+                })
+        })
+
+        /*
         // chunk0 を更新
         VRMParser.chunk0.json = VRMParser.json
         VRMParser.chunk0.chunkData = new TextEncoder().encode( JSON.stringify(VRMParser.json) )
@@ -328,6 +339,7 @@ class VRMParser {
             + VRMParser.chunk1.chunkLength
 
         console.log('firstPersonBoneOffset', extVRM)
+        */
     }
 
     public static createVRMFile = (): Promise<File> => {
@@ -412,25 +424,20 @@ class VRMParser {
         return  extVRM.secondaryAnimation.boneGroups
     }
 
-    public static setSecondaryAnimationBoneGroups = (boneGroups: any) => {
-        const extVRM = VRMParser.json.extensions.VRM
-        extVRM.secondaryAnimation.boneGroups = boneGroups
+    // スプリングボーンを更新
+    public static setSecondaryAnimationBoneGroups = (boneGroups: any): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            const extVRM = VRMParser.json.extensions.VRM
+            extVRM.secondaryAnimation.boneGroups = boneGroups
 
-        // chunk0 を更新
-        VRMParser.chunk0.json = VRMParser.json
-        VRMParser.chunk0.chunkData = new TextEncoder().encode( JSON.stringify(VRMParser.json) )
-        VRMParser.chunk0.chunkLength = VRMParser.chunk0.chunkData.length
-
-        // headerの length も更新
-        VRMParser.header.length = VRMParser.CHUNK_HEADER_SIZE 
-            + VRMParser.CHUNK_LENGTH_SIZE 
-            + VRMParser.CHUNK_TYPE_SIZE 
-            + VRMParser.chunk0.chunkLength
-            + VRMParser.CHUNK_LENGTH_SIZE 
-            + VRMParser.CHUNK_TYPE_SIZE 
-            + VRMParser.chunk1.chunkLength
-
-        console.log('firstPersonBoneOffset', extVRM)
+            return VRMParser.chunkRebuilding()
+                .then(() => {
+                    resolve()
+                })
+                .catch(e => {
+                    console.error('error', e)
+                })
+        })
     }    
 }
 
