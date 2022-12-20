@@ -5,6 +5,7 @@
       <ul class="tabMenu">
         <li @click="clickSelectTab('tab_images')">{{$t('tabImages')}}</li>
         <li @click="clickSelectTab('tab_first_person')">{{$t('tabFirstPerson')}}</li>
+        <li @click="clickSelectTab('tab_vroid')">{{$t('tabVroid')}}</li>
       </ul>
     </div>
     <div class="tabContents" v-if="selectTabType == 'tab_images'">
@@ -66,6 +67,36 @@
             </td>
           </tr>
         </tfoot>
+      </table>
+    </div>
+    <div class="tabContents tabVroid" v-if="selectTabType == 'tab_vroid'">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>item</th>
+            <th>value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>
+              <p>VRM Spring Bone</p>
+              <p>Name</p>
+            </th>
+            <td>
+              <p>Gravity Power</p>
+              <input type="number" step="0.1" v-model.number="firstPerson.firstPersonBoneOffset.x">
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2">
+              <label for="btnUpdateFirstPerson">{{$t('updateFirstPerson')}}</label>
+              <input id="btnUpdateFirstPerson" type='button' @click="clickUpdateFirstPerson" value="save">
+            </td>
+          </tr>
+        </tfoot>        
       </table>
     </div>
   </div>
@@ -264,7 +295,7 @@ export default class VRMParserView extends Vue {
       }      
     }
   }
-  .tabFirstPerson {
+  .tabFirstPerson, .tabVroid {
     label {
       font-size: large;
       border: solid 3px #AAAAAA;
@@ -281,5 +312,9 @@ export default class VRMParserView extends Vue {
     input[type="button"] {
       display:none; 
     }
+  }
+
+  .tabVroid {
+
   }
 </style>
