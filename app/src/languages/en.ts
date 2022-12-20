@@ -7,5 +7,6 @@ export default {
     tabImages: 'images',
     tabFirstPerson: 'FirstPersonOffset',
     updateFirstPerson: 'UpdateFirstPersonOffset',
-    tabVroid: 'For VRoid'
+    tabVroid: 'For VRoid',
+    updateVroid: 'Update',
 }

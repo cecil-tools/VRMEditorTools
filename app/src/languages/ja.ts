@@ -7,5 +7,6 @@ export default {
     tabImages: '画像一覧',
     tabFirstPerson: '視点位置調整',
     updateFirstPerson: '視点位置を更新',
-    tabVroid: 'VRoid向け'
+    tabVroid: 'VRoid向け',
+    updateVroid: '更新',
 }
