@@ -9,5 +9,5 @@ export default {
     updateFirstPerson: 'UpdateFirstPersonOffset',
     tabVroid: 'For VRoid',
     updateVroid: 'Update',
-    placeholderGravityPower: 'Recommended setting is 0.2 - 0.3'
+    placeholderGravityPower: 'Recommended setting is 0.05 - 0.2'
 }
