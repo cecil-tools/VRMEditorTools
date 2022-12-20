@@ -48,15 +48,15 @@
         <tbody>
           <tr>
             <th>x</th>
-            <td><input type="number" v-model.number="firstPerson.firstPersonBoneOffset.x"></td>
+            <td><input type="number" step="0.01" v-model.number="firstPerson.firstPersonBoneOffset.x"></td>
           </tr>
           <tr>
             <th>y</th>
-            <td><input type="number" v-model.number="firstPerson.firstPersonBoneOffset.y"></td>
+            <td><input type="number" step="0.01" v-model.number="firstPerson.firstPersonBoneOffset.y"></td>
           </tr>
           <tr>
             <th>z</th>
-            <td><input type="number" v-model.number="firstPerson.firstPersonBoneOffset.z"></td>
+            <td><input type="number" step="0.01" v-model.number="firstPerson.firstPersonBoneOffset.z"></td>
           </tr>
         </tbody>
         <tfoot>
