@@ -9,4 +9,5 @@ export default {
     updateFirstPerson: '視点位置を更新',
     tabVroid: 'VRoid向け',
     updateVroid: '更新',
+    placeholderGravityPower: 'おすすめ値は 0.2 - 0.3'
 }
