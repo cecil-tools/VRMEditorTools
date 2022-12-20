@@ -403,6 +403,35 @@ class VRMParser {
             resolve()
         })      
     }
+
+    // スプリングボーン グループ を取得する
+    public static getSecondaryAnimationBoneGroups = (): {boneGroups: any} => {
+        const extVRM = VRMParser.json.extensions.VRM
+        console.log('extVRM', extVRM)
+        console.log('secondaryAnimation', extVRM.secondaryAnimation)
+        return  extVRM.secondaryAnimation.boneGroups
+    }
+
+    public static setSecondaryAnimationBoneGroups = (boneGroups: any) => {
+        const extVRM = VRMParser.json.extensions.VRM
+        extVRM.secondaryAnimation.boneGroups = boneGroups
+
+        // chunk0 を更新
+        VRMParser.chunk0.json = VRMParser.json
+        VRMParser.chunk0.chunkData = new TextEncoder().encode( JSON.stringify(VRMParser.json) )
+        VRMParser.chunk0.chunkLength = VRMParser.chunk0.chunkData.length
+
+        // headerの length も更新
+        VRMParser.header.length = VRMParser.CHUNK_HEADER_SIZE 
+            + VRMParser.CHUNK_LENGTH_SIZE 
+            + VRMParser.CHUNK_TYPE_SIZE 
+            + VRMParser.chunk0.chunkLength
+            + VRMParser.CHUNK_LENGTH_SIZE 
+            + VRMParser.CHUNK_TYPE_SIZE 
+            + VRMParser.chunk1.chunkLength
+
+        console.log('firstPersonBoneOffset', extVRM)
+    }    
 }
 
 export default VRMParser;

@@ -73,24 +73,21 @@
       <table class="table">
         <thead>
           <tr>
-            <th>item</th>
+            <th>Spring Bone</th>
             <th>value</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <th>
-              <p>VRM Spring Bone</p>
-              <p>Name</p>
-            </th>
+          <tr v-if="springBoneSkirt">
+            <th>{{springBoneSkirt.comment}}</th>
             <td>
               <p>Gravity Power</p>
-              <input type="number" step="0.1" v-model.number="firstPerson.firstPersonBoneOffset.x">
+              <input type="number" step="0.1" v-model.number="springBoneSkirt.gravityPower">
             </td>
           </tr>
         </tbody>
         <tfoot>
-          <tr>
+          <tr v-if="springBoneSkirt">
             <td colspan="2">
               <label for="btnUpdateVroid">{{$t('updateVroid')}}</label>
               <input id="btnUpdateVroid" type='button' @click="clickUpdateVroid" value="save">
@@ -124,6 +121,9 @@ export default class VRMParserView extends Vue {
   // 視点位置
   firstPerson: any
 
+  // スプリングボーン 一覧
+  springBoneSkirt: any
+
   parse(selectVrmFile: File): Promise<any> {
     return new Promise((resolve, reject) => {
       console.log('VRMParserView parse', selectVrmFile)
@@ -148,6 +148,14 @@ export default class VRMParserView extends Vue {
         // TODO 頭にアクセサリを追加してみる
         // VRMParser.addHeadAccessory()
 
+        // スプリングボーン グループ取得
+        const springBoneGroups: any = VRMParser.getSecondaryAnimationBoneGroups()
+        if (springBoneGroups) {
+          this.springBoneSkirt = springBoneGroups.filter((v :any) => {
+            return v.comment == 'Skirt'
+          })[0]
+          console.log('springBoneSkirt', this.springBoneSkirt)
+        }
         resolve(VRMParser.json);      
       })
     });
@@ -239,7 +247,19 @@ export default class VRMParserView extends Vue {
   }
 
   clickUpdateVroid() {
-    console.log('clickUpdateVroid', this.firstPerson)
+    if (this.springBoneSkirt == null){
+      return;
+    }
+
+    const springBoneGroups: any = VRMParser.getSecondaryAnimationBoneGroups()
+    springBoneGroups.forEach(v => {
+      if (v.comment == 'Skirt') {
+        // gravityPower を更新
+        v.gravityPower = this.springBoneSkirt.gravityPower
+      }
+    });
+    console.log('clickUpdateVroid', springBoneGroups)
+    VRMParser.setSecondaryAnimationBoneGroups(springBoneGroups)    
   }
 }
 </script>
