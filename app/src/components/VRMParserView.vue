@@ -79,10 +79,13 @@
         </thead>
         <tbody>
           <tr v-if="springBoneSkirt">
-            <th>{{springBoneSkirt.comment}}</th>
-            <td>
+            <th>
+              <p>{{springBoneSkirt.comment}}</p>
               <p>Gravity Power</p>
-              <input type="number" step="0.1" v-model.number="springBoneSkirt.gravityPower">
+            </th>
+            <td>
+              <input type="number" step="0.01" v-model.number="springBoneSkirt.gravityPower">
+              <p class="placeholderGravityPower">{{$t('placeholderGravityPower') }}</p>
             </td>
           </tr>
         </tbody>
@@ -252,7 +255,7 @@ export default class VRMParserView extends Vue {
     }
 
     const springBoneGroups: any = VRMParser.getSecondaryAnimationBoneGroups()
-    springBoneGroups.forEach(v => {
+    springBoneGroups.forEach((v: any) => {
       if (v.comment == 'Skirt') {
         // gravityPower を更新
         v.gravityPower = this.springBoneSkirt.gravityPower
@@ -339,6 +342,8 @@ export default class VRMParserView extends Vue {
   }
 
   .tabVroid {
-
+    .placeholderGravityPower {
+      font-size: small;
+    }
   }
 </style>
