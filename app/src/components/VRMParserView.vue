@@ -92,8 +92,8 @@
         <tfoot>
           <tr>
             <td colspan="2">
-              <label for="btnUpdateFirstPerson">{{$t('updateFirstPerson')}}</label>
-              <input id="btnUpdateFirstPerson" type='button' @click="clickUpdateFirstPerson" value="save">
+              <label for="btnUpdateVroid">{{$t('updateVroid')}}</label>
+              <input id="btnUpdateVroid" type='button' @click="clickUpdateVroid" value="save">
             </td>
           </tr>
         </tfoot>        
@@ -237,6 +237,10 @@ export default class VRMParserView extends Vue {
     console.log('firstPerson', this.firstPerson)
     VRMParser.setFirstPersonBoneOffset(this.firstPerson.firstPersonBoneOffset)
   }
+
+  clickUpdateVroid() {
+    console.log('clickUpdateVroid', this.firstPerson)
+  }
 }
 </script>
 
@@ -283,7 +287,7 @@ export default class VRMParserView extends Vue {
       li {
         display: inline;
         width: auto;
-        padding: 10px 20px;
+        padding: 10px 10px;
         color: $white;
         border-right: 1px solid $white;
         background-color: $green;
