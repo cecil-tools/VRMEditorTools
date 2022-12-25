@@ -6,6 +6,7 @@
         <li @click="clickSelectTab('tab_images')">{{$t('tabImages')}}</li>
         <li @click="clickSelectTab('tab_first_person')">{{$t('tabFirstPerson')}}</li>
         <li @click="clickSelectTab('tab_vroid')">{{$t('tabVroid')}}</li>
+        <li @click="clickSelectTab('tab_short_video')">{{$t('tabShortVideo')}}</li>
       </ul>
     </div>
     <TabImages :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
