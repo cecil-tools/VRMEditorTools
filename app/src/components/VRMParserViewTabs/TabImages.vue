@@ -8,7 +8,6 @@
               <p>Name</p>
               <p>Image</p>
             </th>
-            <th>File Size[byte]</th>
             <th>&nbsp;</th>
           </tr>
         </thead>
@@ -19,7 +18,6 @@
               <p>{{img.name}}</p>
               <p><img class="src_thumbnail" :src="img.src" :alt="img.name"/></p>
             </td>
-            <td>{{img.size}}</td>
             <td>
               <p><button @click="exportImage(img)">{{$t('exportImage')}}</button></p>
               <p><button @click="importImage(img)">{{$t('importImage')}}</button></p>
