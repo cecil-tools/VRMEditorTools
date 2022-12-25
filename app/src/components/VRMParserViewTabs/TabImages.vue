@@ -106,6 +106,7 @@ export default class TabImages extends Vue {
 </script>
 
 <style scoped lang="scss">
+.tabImages {
   .table {
     margin: 0 auto;
     width: 100%;
@@ -132,32 +133,5 @@ export default class TabImages extends Vue {
     width: 60px;
     margin: 0 auto;
   }
-  
-  $green: #007db9;
-  $white: #fff;
-
-  #tab {
-    width: 100%;
-    max-width: 500px;
-
-    .tabMenu {
-      display: flex;
-      padding-left: 3px;
-      margin: 0;
-
-      li {
-        display: inline;
-        width: auto;
-        padding: 10px 10px;
-        color: $white;
-        border-right: 1px solid $white;
-        background-color: $green;
-        cursor: pointer;
-              
-        &:last-child {
-          border-right: none;
-        }
-      }      
-    }
-  }
+}
 </style>
