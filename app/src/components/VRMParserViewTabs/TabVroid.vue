@@ -91,7 +91,7 @@ export default class TabVroid extends Vue {
   }
 
   .tabVroid {
-    .placeholderGravityPower {
+    .placeholderGravityPower, .placeholderHitRadius {
       font-size: small;
     }
   }
