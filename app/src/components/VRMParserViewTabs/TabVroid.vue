@@ -3,7 +3,7 @@
       <table class="table">
         <thead>
           <tr>
-            <th>Spring Bone</th>
+            <th>Spring Bone Name</th>
             <th>value</th>
           </tr>
         </thead>
@@ -11,13 +11,21 @@
           <tr v-if="springBoneSkirt">
             <th>
               <p>{{springBoneSkirt.comment}}</p>
-              <p>Gravity Power</p>
             </th>
             <td>
+              <p>Gravity Power</p>
               <input type="number" step="0.01" v-model.number="springBoneSkirt.gravityPower">
               <p class="placeholderGravityPower">{{$t('placeholderGravityPower') }}</p>
             </td>
           </tr>
+          <tr v-if="springBoneSkirt">
+            <th></th>
+            <td>
+              <p>Hit Radius</p>
+              <input type="number" step="0.01" v-model.number="springBoneSkirt.hitRadius">
+              <p class="placeholderHitRadius">{{$t('placeholderHitRadius') }}</p>
+            </td>
+          </tr>          
         </tbody>
         <tfoot>
           <tr v-if="springBoneSkirt">
@@ -51,8 +59,9 @@ export default class TabVroid extends Vue {
     const springBoneGroups: any = VRMParser.getSecondaryAnimationBoneGroups()
     springBoneGroups.forEach((v: any) => {
       if (v.comment == 'Skirt') {
-        // gravityPower を更新
+        // gravityPower,hitRadius を更新
         v.gravityPower = this.springBoneSkirt.gravityPower
+        v.hitRadius = this.springBoneSkirt.hitRadius
       }
     });
     console.log('clickUpdateVroid', springBoneGroups)

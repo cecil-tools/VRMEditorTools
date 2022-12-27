@@ -10,5 +10,10 @@ export default {
     tabVroid: 'For VRoid',
     updateVroid: 'Update',
     placeholderGravityPower: 'Recommended setting is 0.05 - 0.2',
-    tabShortVideo: "Short Video"
+    placeholderHitRadius: 'Recommended setting is 0.05 - 0.2',
+    tabShortVideo: 'Short Video',
+    tabShortVideoLabelScene: 'Scene',
+    tabShortVideoLabelBackgroundImage: 'background image',
+    tabShortVideoBtnBackgroundImage: 'Upload Image',
+    tabShortVideoBtnCreateVideo: 'Create Video'
 }

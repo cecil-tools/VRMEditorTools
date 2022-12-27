@@ -6,12 +6,15 @@
         <li @click="clickSelectTab('tab_images')">{{$t('tabImages')}}</li>
         <li @click="clickSelectTab('tab_first_person')">{{$t('tabFirstPerson')}}</li>
         <li @click="clickSelectTab('tab_vroid')">{{$t('tabVroid')}}</li>
+        <!--
         <li @click="clickSelectTab('tab_short_video')">{{$t('tabShortVideo')}}</li>
+        -->
       </ul>
     </div>
     <TabImages :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
     <TabFirstPerson :selectTabType="selectTabType" :firstPerson="firstPerson" />
     <TabVroid :selectTabType="selectTabType" :springBoneSkirt="springBoneSkirt" />
+    <TabShortVideo :selectTabType="selectTabType" />
   </div>
 </template>
 
@@ -22,12 +25,14 @@ import VRMParser from '@/module/VRMParser'
 import TabImages from '@/components/VRMParserViewTabs/TabImages.vue'
 import TabFirstPerson from '@/components/VRMParserViewTabs/TabFirstPerson.vue'
 import TabVroid from '@/components/VRMParserViewTabs/TabVroid.vue'
+import TabShortVideo from '@/components/VRMParserViewTabs/TabShortVideo.vue'
 
 @Component({
   components: {
     TabImages,
     TabFirstPerson,
-    TabVroid
+    TabVroid,
+    TabShortVideo
   }
 })
 export default class VRMParserView extends Vue {
