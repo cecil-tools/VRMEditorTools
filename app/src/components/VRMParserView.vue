@@ -12,7 +12,7 @@
       </ul>
     </div>
     <TabImages :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
-    <TabFirstPerson :selectTabType="selectTabType" :firstPerson="firstPerson" />
+    <TabFirstPerson :selectTabType="selectTabType" :firstPerson="firstPerson" :vrmScale="vrmScale" :drawVrm="drawVrm" />
     <TabVroid :selectTabType="selectTabType" :springBoneSkirt="springBoneSkirt" />
     <TabShortVideo :selectTabType="selectTabType" />
   </div>
@@ -50,6 +50,9 @@ export default class VRMParserView extends Vue {
   // 視点位置
   firstPerson: any
 
+  // スケール
+  vrmScale: any;
+
   // スプリングボーン 一覧
   springBoneSkirt: any
 
@@ -78,6 +81,10 @@ export default class VRMParserView extends Vue {
         if (this.firstPerson && this.firstPerson.firstPersonBone != -1) {
           this.drawFirstPerson(VRMParser.json)
         }
+
+        // VRM 全体のスケールを取得
+        this.vrmScale = VRMParser.json.nodes[0].scale
+        console.log('Armature', VRMParser.json.nodes[0].name, this.vrmScale)
 
         // TODO 頭にアクセサリを追加してみる
         // VRMParser.addHeadAccessory()

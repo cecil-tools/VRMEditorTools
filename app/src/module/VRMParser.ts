@@ -322,24 +322,6 @@ class VRMParser {
                     console.error('error', e)
                 })
         })
-
-        /*
-        // chunk0 を更新
-        VRMParser.chunk0.json = VRMParser.json
-        VRMParser.chunk0.chunkData = new TextEncoder().encode( JSON.stringify(VRMParser.json) )
-        VRMParser.chunk0.chunkLength = VRMParser.chunk0.chunkData.length
-
-        // headerの length も更新
-        VRMParser.header.length = VRMParser.CHUNK_HEADER_SIZE 
-            + VRMParser.CHUNK_LENGTH_SIZE 
-            + VRMParser.CHUNK_TYPE_SIZE 
-            + VRMParser.chunk0.chunkLength
-            + VRMParser.CHUNK_LENGTH_SIZE 
-            + VRMParser.CHUNK_TYPE_SIZE 
-            + VRMParser.chunk1.chunkLength
-
-        console.log('firstPersonBoneOffset', extVRM)
-        */
     }
 
     public static createVRMFile = (): Promise<File> => {
@@ -438,7 +420,24 @@ class VRMParser {
                     console.error('error', e)
                 })
         })
-    }    
+    }
+    
+    // スケールを設定する
+    public static setScale = (scale: any): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            VRMParser.json.nodes[0].scale[0] = scale[0]
+            VRMParser.json.nodes[0].scale[1] = scale[1]
+            VRMParser.json.nodes[0].scale[2] = scale[2]
+
+            return VRMParser.chunkRebuilding()
+                .then(() => {
+                    resolve()
+                })
+                .catch(e => {
+                    console.error('error', e)
+                })
+        })
+    }
 }
 
 export default VRMParser;
