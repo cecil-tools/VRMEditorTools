@@ -104,6 +104,14 @@ export default class TabImages extends Vue {
 </script>
 
 <style scoped lang="scss">
+
+table {
+  width: 100%;
+  table-layout: fixed;
+  word-break: break-all;
+  word-wrap: break-all;
+}
+
 .tabImages {
   .table {
     margin: 0 auto;

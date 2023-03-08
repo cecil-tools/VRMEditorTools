@@ -179,9 +179,15 @@ export default class VRMView extends Vue {
 
 <style scoped>
   #canvas {    
-    width: 300px;
-    height: 400px;
-
+    width: 600px;
+    height: 540px;
     background-color: gray;
+  }
+  
+  @media screen and (max-width: 480px) { 
+    #canvas {    
+      width: 300px;
+      height: 400px;
+    }
   }
 </style>

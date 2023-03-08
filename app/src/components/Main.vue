@@ -96,7 +96,8 @@ export default class Main extends Vue {
     margin: 0 auto;
     /* background-color: aqua; */
     .container {
-      width: 300px;
+      /* width: 300px; */
+      width: 100%;
 
       label {
         font-size: large;
@@ -116,7 +117,18 @@ export default class Main extends Vue {
       }
     }
   }
+  
+  @media screen and (max-width: 480px) { 
+    .main {
+      flex-direction: column;
+      .container {
+        width: 300px;
+        margin: 0 auto;
+      }
+    }
+  }
 
+  /*
   @media screen and (max-width: 767px) {
     .main {
       flex-direction: column;
@@ -126,4 +138,5 @@ export default class Main extends Vue {
       }
     }
   }
+  */
 </style>
