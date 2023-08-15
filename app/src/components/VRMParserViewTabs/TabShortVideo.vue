@@ -28,7 +28,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator'
-import VRMParser from '@/module/VRMParser'
+// import VRMParser from '@/module/VRMParser'
+
+declare var MediaRecorder: any;
 
 @Component
 export default class TabShortVideo extends Vue {
