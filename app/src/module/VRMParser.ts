@@ -425,9 +425,20 @@ class VRMParser {
     // スケールを設定する
     public static setScale = (scale: any): Promise<void> => {
         return new Promise((resolve, reject) => {
-            VRMParser.json.nodes[0].scale[0] = scale[0]
-            VRMParser.json.nodes[0].scale[1] = scale[1]
-            VRMParser.json.nodes[0].scale[2] = scale[2]
+            // VRMParser.json.nodes から name が Armature を探す
+            VRMParser.json.nodes.forEach((node: any) => {
+                const name = node.name.toLowerCase()
+                if (name === 'amature') {
+                    // name Armature に scale がない場合がある
+                    if (!node.scale) {
+                        node.scale = [1.0, 1.0, 1.0]
+                    }
+                    node.scale[0] = scale[0]
+                    node.scale[1] = scale[1]
+                    node.scale[2] = scale[2]
+                }       
+            })
+            console.log('setScale scale', VRMParser.json.nodes[0].scale)
 
             return VRMParser.chunkRebuilding()
                 .then(() => {
