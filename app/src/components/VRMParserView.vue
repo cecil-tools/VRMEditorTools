@@ -83,8 +83,10 @@ export default class VRMParserView extends Vue {
         }
 
         // VRM 全体のスケールを取得
-        this.vrmScale = VRMParser.json.nodes[0].scale
-        console.log('Armature', VRMParser.json.nodes[0].name, this.vrmScale)
+        if (VRMParser.json.nodes[0].scale != null) {
+          this.vrmScale = VRMParser.json.nodes[0].scale
+          console.log(`Armature name: ${VRMParser.json.nodes[0].name} vrmScale: ${this.vrmScale}`)
+        }
 
         // TODO 頭にアクセサリを追加してみる
         // VRMParser.addHeadAccessory()
