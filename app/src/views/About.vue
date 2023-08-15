@@ -25,6 +25,11 @@
       <h2>支援</h2>
       <p><a href="https://www.amazon.co.jp/hz/wishlist/ls/1U1BNCYHORFTC?ref_=wl_share">Amazonギフト券 500円を送る</a></p>
       <p>モチベーション維持,サーバ維持費になるのでお待ちしてます</p>
+
+      <h2>他のツール</h2>
+      <p><a href="https://vrm-editor-tools.netlify.app/">VRMEditorTools</a></p>
+      <p><a href="https://tfuru.github.io/vrma-loader-sample/">VRMA, BVHをアップロードして VRMを動かすやつ</a></p>
+      <p><a href="https://avatar-reduce.an.r.appspot.com/">VRoid Studio 1.1.0 ,VRoid Mobile 1.15.1 で作られたVRMを cluster 用に変換する</a></p>
     </div>
   </div>
 </template>

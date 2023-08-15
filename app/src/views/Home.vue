@@ -3,6 +3,13 @@
     <h1>VRMEditorTools</h1>
     <p>{{$t('description')}}</p>
     <Main />
+
+    <div>
+      <h2>他のVRMツール</h2>
+      <p><a href="https://vrm-editor-tools.netlify.app/">VRMEditorTools</a></p>
+      <p><a href="https://tfuru.github.io/vrma-loader-sample/">VRMA, BVHをアップロードして VRMを動かすやつ</a></p>
+      <p><a href="https://avatar-reduce.an.r.appspot.com/">VRoid Studio 1.1.0 ,VRoid Mobile 1.15.1 で作られたVRMを cluster 用に変換する</a></p>  
+    </div>
   </div>
 </template>
 
