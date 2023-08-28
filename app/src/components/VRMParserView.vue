@@ -3,11 +3,11 @@
     <!-- TABメニュー -->
     <div id="tab">
       <ul class="tabMenu">
+        <li @click="clickSelectTab('tab_images')">{{$t('tabImages')}}</li>
         <li @click="clickSelectTab('tab_materials')">{{$t('tabMaterials')}}</li>
         <li @click="clickSelectTab('tab_first_person')">{{$t('tabFirstPerson')}}</li>
         <li @click="clickSelectTab('tab_vroid')">{{$t('tabVroid')}}</li>
         <!--
-        <li @click="clickSelectTab('tab_images')">{{$t('tabImages')}}</li>
         <li @click="clickSelectTab('tab_short_video')">{{$t('tabShortVideo')}}</li>
         -->
       </ul>
