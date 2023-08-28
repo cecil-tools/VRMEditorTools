@@ -173,6 +173,10 @@ class VRMParser {
         // console.log('chunkData', chunkData)
         return new Promise((resolve, reject) => {
             const images: any[] = []
+            if (json.images.length == 0) {
+                resolve(images)
+                return
+            }
             json.images
                 .forEach((v: any) => {                
                 const bufferView = json.bufferViews[v.bufferView]
