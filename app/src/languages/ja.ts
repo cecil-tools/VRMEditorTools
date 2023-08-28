@@ -17,5 +17,6 @@ export default {
     tabShortVideoLabelScene: "シーン",
     tabShortVideoLabelBackgroundImage: "背景画像",
     tabShortVideoBtnBackgroundImage: "アップロード",
-    tabShortVideoBtnCreateVideo: "動画作成"
+    tabShortVideoBtnCreateVideo: "動画作成",
+    tabMaterials: 'マテリアル',
 }
