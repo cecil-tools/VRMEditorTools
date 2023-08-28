@@ -3,7 +3,6 @@
       <table class="table">
         <thead>
           <tr>
-            <th>No.</th>
             <th>
               <p>Name</p>
               <p>Material</p>
@@ -12,10 +11,9 @@
         </thead>
         <tbody>
           <tr v-for="img,i in vrmMaterials" :key="i">
-            <td>{{img.index}}</td>
-            <td>
+            <td class="tableDetail">
               <p>{{img.name}}</p>
-              <table class="table tableDetail">
+              <table>
                 <tbody>
                   <tr v-if="img.baseColorTexture.img">
                     <td class="title">baseColor</td>
@@ -38,7 +36,7 @@
                     </td>
                   </tr>                  
                 </tbody>
-              </table>              
+              </table>    
             </td>
           </tr>
         </tbody>        
@@ -180,6 +178,7 @@ export default class TabMaterials extends Vue {
 }
 
 .tableDetail {
+  border-bottom: 1px black solid;
   .title {
     width: 80px;
   }

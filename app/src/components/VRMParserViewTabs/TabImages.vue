@@ -3,24 +3,29 @@
       <table class="table">
         <thead>
           <tr>
-            <th>No.</th>
             <th>
               <p>Name</p>
               <p>Image</p>
             </th>
-            <th>&nbsp;</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="img,i in vrmImages" :key="i">
-            <td>{{img.index}}</td>
-            <td>
+            <td class="tableDetail">
               <p>{{img.name}}</p>
-              <p><img class="src_thumbnail" :src="img.src" :alt="img.name"/></p>
-            </td>
-            <td>
-              <p><button @click="exportImage(img)">{{$t('exportImage')}}</button></p>
-              <p><button @click="importImage(img)">{{$t('importImage')}}</button></p>
+              <table>
+                <tbody>
+                  <tr>
+                    <td>
+                      <img class="src_thumbnail" :src="img.src" :alt="img.name"/>
+                    </td>
+                    <td>
+                      <p><button @click="exportImage(img)">{{$t('exportImage')}}</button></p>
+                      <p><button @click="importImage(img)">{{$t('importImage')}}</button></p>
+                    </td>
+                  </tr>                
+                </tbody>
+              </table>
             </td>
           </tr>
         </tbody>
@@ -105,6 +110,38 @@ export default class TabImages extends Vue {
 
 <style scoped lang="scss">
 
+.table {
+  margin: 0 auto;
+  width: 100%;
+  /* border: 1px black solid; */
+}
+.table thead {
+  background-color: lightslategray;
+  height: 60px;
+}
+
+.table thead p, .table tbody p {
+  margin: 5px auto;
+  text-align: left;
+}
+
+.src_thumbnail {
+  display: block;
+  width: 60px;
+  margin: 0 auto;
+}
+
+.tableDetail {
+  border-bottom: 1px black solid;
+  .title {
+    width: 80px;
+  }
+}
+
+</style>
+
+<style scoped lang="scss">
+/*
 table {
   width: 100%;
   table-layout: fixed;
@@ -116,7 +153,6 @@ table {
   .table {
     margin: 0 auto;
     width: 100%;
-    /* border: 1px black solid; */
   }
   .table thead {
     background-color: lightslategray;
@@ -124,6 +160,7 @@ table {
   }
   .table thead p, .table tbody p {
     margin: 5px auto;
+    text-align: left;
   }
 
   .table tbody tr {
@@ -139,5 +176,12 @@ table {
     width: 60px;
     margin: 0 auto;
   }
+  .tableDetail {
+    border-bottom: 1px black solid;
+    .title {
+      width: 80px;
+    }
+  }
 }
+*/
 </style>
