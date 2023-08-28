@@ -3,10 +3,11 @@
     <!-- TABメニュー -->
     <div id="tab">
       <ul class="tabMenu">
-        <li @click="clickSelectTab('tab_images')">{{$t('tabImages')}}</li>
+        <li @click="clickSelectTab('tab_materials')">{{$t('tabMaterials')}}</li>
         <li @click="clickSelectTab('tab_first_person')">{{$t('tabFirstPerson')}}</li>
         <li @click="clickSelectTab('tab_vroid')">{{$t('tabVroid')}}</li>
         <!--
+        <li @click="clickSelectTab('tab_images')">{{$t('tabImages')}}</li>
         <li @click="clickSelectTab('tab_short_video')">{{$t('tabShortVideo')}}</li>
         -->
       </ul>
@@ -15,6 +16,7 @@
     <TabFirstPerson :selectTabType="selectTabType" :firstPerson="firstPerson" :vrmScale="vrmScale" :drawVrm="drawVrm" />
     <TabVroid :selectTabType="selectTabType" :springBoneSkirt="springBoneSkirt" />
     <TabShortVideo :selectTabType="selectTabType" />
+    <TabMaterials :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
   </div>
 </template>
 
@@ -26,13 +28,15 @@ import TabImages from '@/components/VRMParserViewTabs/TabImages.vue'
 import TabFirstPerson from '@/components/VRMParserViewTabs/TabFirstPerson.vue'
 import TabVroid from '@/components/VRMParserViewTabs/TabVroid.vue'
 import TabShortVideo from '@/components/VRMParserViewTabs/TabShortVideo.vue'
+import TabMaterials from '@/components/VRMParserViewTabs/TabMaterials.vue'
 
 @Component({
   components: {
     TabImages,
     TabFirstPerson,
     TabVroid,
-    TabShortVideo
+    TabShortVideo,
+    TabMaterials
   }
 })
 export default class VRMParserView extends Vue {
