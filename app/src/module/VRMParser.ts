@@ -407,7 +407,7 @@ class VRMParser {
         const extVRM = VRMParser.getVRMExtensionJson()
         console.log('extVRM', extVRM)
         console.log('secondaryAnimation', extVRM.secondaryAnimation)
-        return  extVRM.secondaryAnimation.boneGroups
+        return extVRM.secondaryAnimation?.boneGroups
     }
 
     // スプリングボーンを更新
