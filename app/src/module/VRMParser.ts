@@ -304,7 +304,7 @@ class VRMParser {
     // 一人称視点の視点のオフセット位置を取得
     // json.extensions.VRM.firstPerson
     public static getFirstPersonBone = (): {firstPerson: any} => {
-        const extVRM = VRMParser.json.extensions.VRM
+        const extVRM = VRMParser.getVRMExtensionJson()
         console.log('extVRM', extVRM)
         console.log('firstPerson', extVRM.firstPerson)
         return  extVRM.firstPerson
@@ -313,7 +313,7 @@ class VRMParser {
     // 一人称視点の視点のオフセット位置を設定
     public static setFirstPersonBoneOffset = (position: {x: number, y: number, z: number}): Promise<void> => {
         return new Promise((resolve, reject) => {
-            const extVRM = VRMParser.json.extensions.VRM
+            const extVRM = VRMParser.getVRMExtensionJson()
             extVRM.firstPerson.firstPersonBoneOffset.x = position.x
             extVRM.firstPerson.firstPersonBoneOffset.y = position.y
             extVRM.firstPerson.firstPersonBoneOffset.z = position.z
@@ -404,7 +404,7 @@ class VRMParser {
 
     // スプリングボーン グループ を取得する
     public static getSecondaryAnimationBoneGroups = (): {boneGroups: any} => {
-        const extVRM = VRMParser.json.extensions.VRM
+        const extVRM = VRMParser.getVRMExtensionJson()
         console.log('extVRM', extVRM)
         console.log('secondaryAnimation', extVRM.secondaryAnimation)
         return  extVRM.secondaryAnimation.boneGroups
@@ -413,7 +413,7 @@ class VRMParser {
     // スプリングボーンを更新
     public static setSecondaryAnimationBoneGroups = (boneGroups: any): Promise<void> => {
         return new Promise((resolve, reject) => {
-            const extVRM = VRMParser.json.extensions.VRM
+            const extVRM = VRMParser.getVRMExtensionJson()
             extVRM.secondaryAnimation.boneGroups = boneGroups
 
             return VRMParser.chunkRebuilding()
@@ -452,6 +452,16 @@ class VRMParser {
                     console.error('error', e)
                 })
         })
+    }
+
+    private static getVRMExtensionJson() {
+        let extVRM = VRMParser.json.extensions.VRM
+        if (extVRM) {
+            console.warn('NOT VRM 0.0, attempting to parse VRM 1.0');
+            extVRM = VRMParser.json.extensions.VRMC_vrm
+        }
+
+        return extVRM
     }
 }
 
