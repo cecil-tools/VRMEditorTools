@@ -456,7 +456,7 @@ class VRMParser {
 
     private static getVRMExtensionJson() {
         let extVRM = VRMParser.json.extensions.VRM
-        if (extVRM) {
+        if (!extVRM) {
             console.warn('NOT VRM 0.0, attempting to parse VRM 1.0');
             extVRM = VRMParser.json.extensions.VRMC_vrm
         }
