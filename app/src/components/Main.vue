@@ -17,9 +17,10 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator'
 
-import VRMView from '@/components/VRMView.vue'
 import FileUpload from '@/components/FileUpload.vue'
 import VRMParserView from '@/components/VRMParserView.vue'
+
+import VRMView from '@/components/VRMViewThree.vue'
 
 @Component({
   components: {

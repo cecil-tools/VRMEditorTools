@@ -306,8 +306,8 @@ class VRMParser {
     public static getFirstPersonBone = (): {firstPerson: any} => {
         const extVRM = VRMParser.json.extensions.VRM
         console.log('extVRM', extVRM)
-        console.log('firstPerson', extVRM.firstPerson)
-        return  extVRM.firstPerson
+        // console.log('firstPerson', extVRM.firstPerson)
+        return  extVRM?.firstPerson
     }
 
     // 一人称視点の視点のオフセット位置を設定
@@ -406,8 +406,8 @@ class VRMParser {
     public static getSecondaryAnimationBoneGroups = (): {boneGroups: any} => {
         const extVRM = VRMParser.json.extensions.VRM
         console.log('extVRM', extVRM)
-        console.log('secondaryAnimation', extVRM.secondaryAnimation)
-        return  extVRM.secondaryAnimation.boneGroups
+        // console.log('secondaryAnimation', extVRM.secondaryAnimation)
+        return  extVRM?.secondaryAnimation?.boneGroups
     }
 
     // スプリングボーンを更新

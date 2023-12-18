@@ -14,7 +14,7 @@ import 'babylon-vrm-loader'
   components: {
   } 
 })
-export default class VRMView extends Vue {
+export default class VRMViewBabylon extends Vue {
   _scene: any = null
   _engine: any = null
 
