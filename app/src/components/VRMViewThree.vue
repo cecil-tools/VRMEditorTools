@@ -58,7 +58,7 @@ export default class VRMViewThree extends Vue {
 
     // カメラを作成 
     this.camera = new THREE.PerspectiveCamera(70, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-    this.camera.position.set(0, 1, -2);
+    this.camera.position.set(0, 1, -1);
     this.camera.rotation.set(0, Math.PI, 0);
             
     // ライトを作成
