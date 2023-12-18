@@ -1,5 +1,6 @@
 .DS_Store
 ._.DS_Store
+._*
 
 # Logs
 logs
@@ -131,3 +132,7 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+
+# firebase
+.firebase/
