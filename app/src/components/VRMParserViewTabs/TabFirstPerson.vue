@@ -12,15 +12,15 @@
         -->
         <tbody>
           <tr>
-            <th>X</th>
+            <td class="label">X</td>
             <td><input type="number" step="0.01" v-model.number="firstPerson.firstPersonBoneOffset.x"></td>
           </tr>
           <tr>
-            <th>Y</th>
+            <td class="label">Y</td>
             <td><input type="number" step="0.01" v-model.number="firstPerson.firstPersonBoneOffset.y"></td>
           </tr>
           <tr>
-            <th>Z</th>
+            <td class="label">Z</td>
             <td><input type="number" step="0.01" v-model.number="firstPerson.firstPersonBoneOffset.z"></td>
           </tr>
         </tbody>
@@ -37,17 +37,23 @@
         -->
         <tbody>
           <tr>
-            <th>Scale</th>
+            <td class="label">Scale</td>
             <td>
               <input type="number" step="0.01" v-model.number="vrmScale[0]" @change="changeScale">
             </td>
           </tr>
         </tbody>
-      </table>      
-      <div>
-        <label for="btnUpdateFirstPerson">{{$t('updateFirstPerson')}}</label>
-        <input id="btnUpdateFirstPerson" type='button' @click="clickUpdateFirstPerson" value="save">
-      </div>
+        <tfoot>
+          <tr>
+            <td colspan="2">
+              <div>
+                <label for="btnUpdateFirstPerson">{{$t('updateFirstPerson')}}</label>
+                <input id="btnUpdateFirstPerson" type='button' @click="clickUpdateFirstPerson" value="save">
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
 </template>
 <script lang="ts">
@@ -105,8 +111,8 @@ export default class TabFirstPerson extends Vue {
     }
     
     table {
-      width: 100%;
-      th {
+      /* width: 100%; */
+      td.label {
         width: 75px;
       }
       th, td {
@@ -120,6 +126,7 @@ export default class TabFirstPerson extends Vue {
     }
 
     label {
+      text-align: center;
       font-size: large;
       border: solid 3px #AAAAAA;
       background-color: #F0F0F0;

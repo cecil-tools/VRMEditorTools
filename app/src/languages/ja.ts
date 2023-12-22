@@ -19,4 +19,22 @@ export default {
     tabShortVideoBtnBackgroundImage: "アップロード",
     tabShortVideoBtnCreateVideo: "動画作成",
     tabMaterials: 'マテリアル',
+    tabMeta: 'モデル情報',
+    updateMeta: '更新',
+
+    // モデル情報
+    meta: {
+        title: 'タイトル',
+        version: 'バージョン',
+        author: '作者',
+        contactInformation: '連絡先',
+        reference: '参照',
+        licens: '使用許諾・ライセンス情報',
+        allowedUserName: '許諾可',
+        violentUssageName: '暴力表現の許諾可',
+        sexualUssageName: '性的表現の許諾可',
+        otherLicenseUrl: 'その他のライセンス条件',
+        otherPermissionUrl: 'その他の権利情報',
+        licenseName: 'ライセンス タイプ',
+    }
 }

@@ -69,12 +69,7 @@ export default class TabMaterials extends Vue {
   reloadVrmMaterials() {
     const materials: any[] = []
     const images = VRMParser.images
-    console.log("TabMaterials materials", VRMParser.json.materials)
-    console.log("TabMaterials images", images)
-    // name
-    // baseColorTexture.index
     VRMParser.json.materials.forEach((elem: any, i: number) => {
-      console.log('elem', elem)
       materials.push({
         index: i,
         name: elem.name,

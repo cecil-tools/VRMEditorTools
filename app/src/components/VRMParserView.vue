@@ -7,6 +7,7 @@
         <li @click="clickSelectTab('tab_materials')">{{$t('tabMaterials')}}</li>
         <li @click="clickSelectTab('tab_first_person')">{{$t('tabFirstPerson')}}</li>
         <li @click="clickSelectTab('tab_vroid')">{{$t('tabVroid')}}</li>
+        <li @click="clickSelectTab('tab_meta')">{{$t('tabMeta')}}</li>
         <!--
         <li @click="clickSelectTab('tab_short_video')">{{$t('tabShortVideo')}}</li>
         -->
@@ -17,6 +18,7 @@
     <TabVroid :selectTabType="selectTabType" :springBoneSkirt="springBoneSkirt" />
     <TabShortVideo :selectTabType="selectTabType" />
     <TabMaterials :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
+    <TabMeta :selectTabType="selectTabType" :meta="meta" />
   </div>
 </template>
 
@@ -29,6 +31,7 @@ import TabFirstPerson from '@/components/VRMParserViewTabs/TabFirstPerson.vue'
 import TabVroid from '@/components/VRMParserViewTabs/TabVroid.vue'
 import TabShortVideo from '@/components/VRMParserViewTabs/TabShortVideo.vue'
 import TabMaterials from '@/components/VRMParserViewTabs/TabMaterials.vue'
+import TabMeta from '@/components/VRMParserViewTabs/TabMeta.vue'
 
 @Component({
   components: {
@@ -36,7 +39,8 @@ import TabMaterials from '@/components/VRMParserViewTabs/TabMaterials.vue'
     TabFirstPerson,
     TabVroid,
     TabShortVideo,
-    TabMaterials
+    TabMaterials,
+    TabMeta
   }
 })
 export default class VRMParserView extends Vue {
@@ -59,6 +63,9 @@ export default class VRMParserView extends Vue {
 
   // スプリングボーン 一覧
   springBoneSkirt: any
+
+  // モデル情報
+  meta: any = {}
 
   clickSelectTab(type: string) {
     console.log('clickSelectTab', type)
@@ -103,6 +110,10 @@ export default class VRMParserView extends Vue {
           })[0]
           console.log('springBoneSkirt', this.springBoneSkirt)
         }
+
+        // モデル情報
+        this.meta = VRMParser.json.extensions.VRM.meta;
+
         resolve(VRMParser.json);      
       })
     });

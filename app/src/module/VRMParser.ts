@@ -305,7 +305,7 @@ class VRMParser {
     // json.extensions.VRM.firstPerson
     public static getFirstPersonBone = (): {firstPerson: any} => {
         const extVRM = VRMParser.json.extensions.VRM
-        console.log('extVRM', extVRM)
+        // console.log('extVRM', extVRM)
         // console.log('firstPerson', extVRM.firstPerson)
         return  extVRM?.firstPerson
     }
@@ -405,7 +405,7 @@ class VRMParser {
     // スプリングボーン グループ を取得する
     public static getSecondaryAnimationBoneGroups = (): {boneGroups: any} => {
         const extVRM = VRMParser.json.extensions.VRM
-        console.log('extVRM', extVRM)
+        // console.log('extVRM', extVRM)
         // console.log('secondaryAnimation', extVRM.secondaryAnimation)
         return  extVRM?.secondaryAnimation?.boneGroups
     }
@@ -452,6 +452,23 @@ class VRMParser {
                     console.error('error', e)
                 })
         })
+    }
+
+    // モデル情報を更新する
+    public static replaceMeta = (meta: any): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            // メタ情報を更新する
+            VRMParser.json.extensions.VRM.meta = meta;
+
+            // json(chunk0), chunk1 を再構築する
+            return VRMParser.chunkRebuilding()
+                .then(() => {
+                    resolve()
+                })
+                .catch(e => {
+                    console.error('error', e)
+                })
+        });
     }
 }
 

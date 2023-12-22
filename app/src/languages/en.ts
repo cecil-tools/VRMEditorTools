@@ -19,4 +19,21 @@ export default {
     tabShortVideoBtnBackgroundImage: 'Upload Image',
     tabShortVideoBtnCreateVideo: 'Create Video',
     tabMaterials: 'Materials',
+    tabMeta: 'Meta',
+
+    // モデル情報
+    meta: {
+        title: 'title',
+        version: 'version',
+        author: 'author',
+        contactInformation: 'contact information',
+        reference: 'reference',
+        licens: 'licens',
+        allowedUserName: 'allowed user name',
+        violentUssageName: 'violent ussage name',
+        sexualUssageName: 'sexual ussage name',
+        otherLicenseUrl: 'other license url',
+        otherPermissionUrl: 'other permission url',
+        licenseName: 'license type',
+    }  
 }
