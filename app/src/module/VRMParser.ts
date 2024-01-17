@@ -302,22 +302,30 @@ class VRMParser {
     }
 
     // 一人称視点の視点のオフセット位置を取得
-    // json.extensions.VRM.firstPerson
     public static getFirstPersonBone = (): {firstPerson: any} => {
         const extVRM = VRMParser.getVRMExtensionJson()
-        console.log('extVRM', extVRM)
-        console.log('firstPerson', extVRM.firstPerson)
-        return  extVRM.firstPerson
+        const version = VRMParser.getVRMVersion()
+        if (version.version == 1) {
+            // VRM 1.0
+            return extVRM.lookAt
+        } else {
+            // VRM 0
+            return extVRM.firstPerson
+        }
     }
 
     // 一人称視点の視点のオフセット位置を設定
-    public static setFirstPersonBoneOffset = (position: {x: number, y: number, z: number}): Promise<void> => {
+    public static setFirstPersonBoneOffset = (position: any): Promise<void> => {
+        // VRM 0 firstPersonBoneOffset を更新する
+        // VRM 1 lookAtOffset を更新する
         return new Promise((resolve, reject) => {
             const extVRM = VRMParser.getVRMExtensionJson()
-            extVRM.firstPerson.firstPersonBoneOffset.x = position.x
-            extVRM.firstPerson.firstPersonBoneOffset.y = position.y
-            extVRM.firstPerson.firstPersonBoneOffset.z = position.z
-
+            const version = VRMParser.getVRMVersion()
+            if (version.version == 0) {
+                extVRM.firstPerson.firstPersonBoneOffset = position.firstPersonBoneOffset
+            } else {
+                extVRM.lookAt.offsetFromHeadBone = position.offsetFromHeadBone
+            }            
             return VRMParser.chunkRebuilding()
                 .then(() => {
                     resolve()
