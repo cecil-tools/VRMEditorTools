@@ -458,7 +458,15 @@ class VRMParser {
     public static replaceMeta = (meta: any): Promise<void> => {
         return new Promise((resolve, reject) => {
             // メタ情報を更新する
-            VRMParser.json.extensions.VRM.meta = meta;
+            let extVRM = VRMParser.json.extensions.VRM
+            if (extVRM) {
+                VRMParser.json.extensions.VRM.meta = meta;
+            }
+            else {
+                // VRM 1.0 に対応
+                extVRM = VRMParser.json.extensions.VRMC_vrm
+                VRMParser.json.extensions.VRMC_vrm.meta = meta;
+            }
 
             // json(chunk0), chunk1 を再構築する
             return VRMParser.chunkRebuilding()
@@ -471,13 +479,22 @@ class VRMParser {
         });
     }
 
-    private static getVRMExtensionJson() {
+    public static getVRMExtensionJson() {
         let extVRM = VRMParser.json.extensions.VRM
         if (!extVRM) {
             console.warn('NOT VRM 0.0, attempting to parse VRM 1.0')
             extVRM = VRMParser.json.extensions.VRMC_vrm
         }
         return extVRM
+    }
+
+    // VRM バージョン情報を取得する
+    public static getVRMVersion() {
+        const extVRM = VRMParser.getVRMExtensionJson()
+        if (extVRM.specVersion) {
+            return {version: 1, value: extVRM.specVersion}
+        }
+        return {version: 0, value: extVRM.exporterVersion}
     }
 }
 

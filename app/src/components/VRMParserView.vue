@@ -18,7 +18,7 @@
     <TabVroid :selectTabType="selectTabType" :springBoneSkirt="springBoneSkirt" />
     <TabShortVideo :selectTabType="selectTabType" />
     <TabMaterials :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
-    <TabMeta :selectTabType="selectTabType" :meta="meta" />
+    <TabMeta :selectTabType="selectTabType" :json="json" />
   </div>
 </template>
 
@@ -65,7 +65,7 @@ export default class VRMParserView extends Vue {
   springBoneSkirt: any
 
   // モデル情報
-  meta: any = {}
+  json: any = {}
 
   clickSelectTab(type: string) {
     console.log('clickSelectTab', type)
@@ -112,7 +112,7 @@ export default class VRMParserView extends Vue {
         }
 
         // モデル情報
-        this.meta = VRMParser.json.extensions.VRM.meta;
+        this.json = VRMParser.getVRMExtensionJson();
 
         resolve(VRMParser.json);      
       })

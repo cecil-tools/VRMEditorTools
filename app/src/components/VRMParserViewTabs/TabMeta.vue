@@ -7,27 +7,28 @@
             <th></th>
           </tr>
         </thead>
-        <tbody>
+        <tbody v-if="vrmVersion == 0">
+          <!-- VRM 0 -->
           <tr>
             <td>{{$t('meta.title')}}</td>
-            <td><input type="text" v-model="meta.title"></td>
+            <td><input type="text" v-model="json.meta.title"></td>
           </tr>
           <tr>
             <td>{{$t('meta.version')}}</td>
-            <td><input type="text" v-model="meta.version"></td>
+            <td><input type="text" v-model="json.meta.version"></td>
           </tr>
           <tr>
             <td>{{$t('meta.author')}}</td>
-            <td><input type="text" v-model="meta.author"></td>
+            <td><input type="text" v-model="json.meta.author"></td>
           </tr>
           <tr>
             <td>{{$t('meta.contactInformation')}}</td>
-            <td><input type="text" v-model="meta.contactInformation"></td>
+            <td><input type="text" v-model="json.meta.contactInformation"></td>
           </tr>
 
           <tr>
             <td>{{$t('meta.reference')}}</td>
-            <td><input type="text" v-model="meta.reference"></td>
+            <td><input type="text" v-model="json.meta.reference"></td>
           </tr>
           <!--
           <tr>
@@ -39,11 +40,10 @@
             <th>{{$t('meta.licens')}}</th>
             <td></td>
           </tr>
-
           <tr>
             <td>{{$t('meta.allowedUserName')}}</td>
             <td>
-              <select v-model="meta.allowedUserName">
+              <select v-model="json.meta.allowedUserName">
                 <option v-for="value,i in userNames" :key="i" :value="value">{{value}}</option>
               </select>
             </td>
@@ -51,7 +51,7 @@
           <tr>
             <td>{{$t('meta.sexualUssageName')}}</td>
             <td>
-              <select v-model="meta.sexualUssageName">
+              <select v-model="json.meta.sexualUssageName">
                 <option v-for="value,i in userNames" :key="i" :value="value">{{value}}</option>
               </select>
             </td>
@@ -59,28 +59,105 @@
           <tr>
             <td>{{$t('meta.violentUssageName')}}</td>
             <td>
-              <select v-model="meta.violentUssageName">
+              <select v-model="json.meta.violentUssageName">
                 <option v-for="value,i in userNames" :key="i" :value="value">{{value}}</option>
               </select>
             </td>
           </tr>
           <tr>
             <td>{{$t('meta.otherLicenseUrl')}}</td>
-            <td><input type="text" v-model="meta.otherLicenseUrl"></td>
+            <td><input type="text" v-model="json.meta.otherLicenseUrl"></td>
           </tr>
 
           <tr>
             <td>{{$t('meta.licenseName')}}</td>
             <td>
-              <select v-model="meta.licenseName">
+              <select v-model="json.meta.licenseName">
                 <option v-for="value,i in licenseNames" :key="i" :value="value">{{value}}</option>
               </select>
             </td>
           </tr>
           <tr>
             <td>{{$t('meta.otherPermissionUrl')}}</td>
-            <td><input type="text" v-model="meta.otherPermissionUrl"></td>
+            <td><input type="text" v-model="json.meta.otherPermissionUrl"></td>
+          </tr>         
+        </tbody>
+
+        <tbody v-if="vrmVersion == 1">
+          <tr>
+            <td>{{$t('meta.title')}}</td>
+            <td><input type="text" v-model="json.meta.name"></td>
           </tr>
+          <tr>
+            <td>{{$t('meta.version')}}</td>
+            <td><input type="text" v-model="json.meta.version"></td>
+          </tr>
+          <tr>
+            <td>{{$t('meta.author')}}</td>
+            <td v-for="author,i in json.meta.authors" :key="i">
+              <input type="text" v-model="json.meta.authors[i]">
+            </td>
+          </tr>
+          <tr>
+            <td>{{$t('meta.contactInformation')}}</td>
+            <td><input type="text" v-model="json.meta.contactInformation"></td>
+          </tr>
+          <tr>
+            <td>{{$t('meta.reference')}}</td>
+            <td><input type="text" v-model="json.meta.reference"></td>
+          </tr>
+          <tr>
+            <th>{{$t('meta.licens')}}</th>
+            <td></td>
+          </tr>          
+          <tr>
+            <td>{{$t('meta.avatarPermission')}}</td>
+            <td>
+              <select v-model="json.meta.avatarPermission">
+                <option v-for="value,i in userNames" :key="i" :value="value">{{value}}</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td>{{$t('meta.allowedUserName')}}</td>
+            <td>
+              <select v-model="json.meta.creditNotation">
+                <option v-for="value,i in userNames" :key="i" :value="value">{{value}}</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td>{{$t('meta.sexualUssageName')}}</td>
+            <td>
+              <select v-model="json.meta.allowExcessivelySexualUsage">
+                <option v-for="value,i in userNames" :key="i" :value="value">{{value}}</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td>{{$t('meta.violentUssageName')}}</td>
+            <td>
+              <select v-model="json.meta.allowExcessivelyViolentUsage">
+                <option v-for="value,i in userNames" :key="i" :value="value">{{value}}</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td>{{$t('meta.allowRedistribution')}}</td>
+            <td>
+              <select v-model="json.meta.allowRedistribution">
+                <option v-for="value,i in userNames" :key="i" :value="value">{{value}}</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td>{{$t('meta.commercialUsage')}}</td>
+            <td>
+              <select v-model="json.meta.commercialUsage">
+                <option v-for="value,i in userNames" :key="i" :value="value">{{value}}</option>
+              </select>
+            </td>
+          </tr>          
         </tbody>
         <tfoot>
           <tr>
@@ -98,7 +175,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator'
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator'
 import VRMParser from '@/module/VRMParser'
 
 // モデル情報
@@ -110,12 +187,16 @@ export default class TabMeta extends Vue {
     selectTabType: string;
 
     @Prop()
-    meta: any;
+    json: any;
+
+    // VRM バージョン
+    vrmVersion = 0;
 
     // 許可一覧
     userNames = [
       'Disallow',
-      'Allow'
+      'Allow',
+      'No'
     ];
 
     // ライセンス タイプ一覧
@@ -131,9 +212,15 @@ export default class TabMeta extends Vue {
       'Other'
     ];
 
+    @Watch('json')
+    private changeJson(val: any[], oldVal: any[]) {
+      this.vrmVersion = VRMParser.getVRMVersion().version;
+      console.log('changeJson', this.vrmVersion);
+    }
+
     clickChangeMeta(e: any) {
       console.log('clickChangeMeta', e);
-      VRMParser.replaceMeta(this.meta);       
+      VRMParser.replaceMeta(this.json.meta);
     }
 }
 </script>
