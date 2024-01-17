@@ -135,4 +135,4 @@ dist
 
 
 # firebase
-.firebase/
+app/.firebase/
