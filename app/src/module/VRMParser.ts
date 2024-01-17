@@ -480,10 +480,12 @@ class VRMParser {
     }
 
     public static getVRMExtensionJson() {
-        let extVRM = VRMParser.json.extensions.VRM
-        if (!extVRM) {
-            console.warn('NOT VRM 0.0, attempting to parse VRM 1.0')
+        let extVRM = null;
+        if ('VRMC_vrm' in VRMParser.json.extensions) {
+            // console.warn('NOT VRM 0.0, attempting to parse VRM 1.0')
             extVRM = VRMParser.json.extensions.VRMC_vrm
+        } else if ('VRM' in VRMParser.json.extensions) {
+            extVRM = VRMParser.json.extensions.VRM
         }
         return extVRM
     }
@@ -491,11 +493,11 @@ class VRMParser {
     // VRM バージョン情報を取得する
     public static getVRMVersion() {
         const extVRM = VRMParser.getVRMExtensionJson()
-        if (extVRM.specVersion) {
-            return {version: 1, value: extVRM.specVersion}
+        if ('exporterVersion' in extVRM) {
+            return {version: 0, value: extVRM.exporterVersion}
         }
-        return {version: 0, value: extVRM.exporterVersion}
-    }
+        return {version: 1, value: extVRM.specVersion}
+    }    
 }
 
 export default VRMParser;

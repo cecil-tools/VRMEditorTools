@@ -11,11 +11,14 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
+import VRMParser from '@/module/VRMParser'
+
 @Component({})
 export default class VRMViewThree extends Vue {
   renderer: any | null = null;
   scene = new THREE.Scene();
   camera: any | null = null;
+  controls: any | null = null;
   loader = new GLTFLoader();
   gltf: any = null;
 
@@ -26,7 +29,16 @@ export default class VRMViewThree extends Vue {
 
   @Prop()
   path!: string
- 
+  
+  BASE_CAMERA_SETTING = {
+    fov: 45,
+    position: {
+      x: 0,
+      y: 1,
+      z: -1.5
+    },
+  };
+
   render = () => {
     if (this.renderer == null) return;
     this.renderer.render(this.scene, this.camera!);
@@ -49,20 +61,25 @@ export default class VRMViewThree extends Vue {
 
     const canvas = this.renderer.domElement;
 
-    // カメラを作成 
-    this.camera = new THREE.PerspectiveCamera(70, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-    this.camera.position.set(0, 1, -1);
-    this.camera.rotation.set(0, Math.PI, 0);
-            
+    // カメラを作成
+    // new THREE.PerspectiveCamera(視野角, アスペクト比, near, far)
+    const aspect = canvas.clientWidth / canvas.clientHeight;
+    this.camera = new THREE.PerspectiveCamera(this.BASE_CAMERA_SETTING.fov, aspect, 0.1, 10);
+    this.camera.position.set(this.BASE_CAMERA_SETTING.position.x,
+      this.BASE_CAMERA_SETTING.position.y, 
+      this.BASE_CAMERA_SETTING.position.z);
+    // this.camera.rotation.set(0, Math.PI, 0);
+    this.scene.add( this.camera );
+
     // ライトを作成
     const light = new THREE.DirectionalLight(0xffffff);
     light.position.set(-1, 1, -1).normalize();
     this.scene.add(light);
 
     // コントローラー
-    const controls = new OrbitControls(this.camera, canvas);
-    controls.target.y = 1.0;
-    controls.update();
+    this.controls = new OrbitControls(this.camera, canvas);
+    this.controls.target.y = 1.0;
+    this.controls.update();
 
     this.update();
   }
@@ -101,7 +118,7 @@ export default class VRMViewThree extends Vue {
           console.log('gltf', gltf)
           this.gltf = gltf;
           // VRM モデルをシーンに追加
-          this.scene.add(gltf.scene);
+          this.scene.add(gltf.scene)
           // this.render();
           resolve();
         },
@@ -118,7 +135,10 @@ export default class VRMViewThree extends Vue {
   
   // カメラのターゲット変更する
   setCameraTarget = (vrmJson: any) => {
-    console.log('setCameraTarget');
+    console.log('setCameraTarget', VRMParser.getVRMVersion());
+    // VRM 1.0 の場合 カメラ位置を調整する
+    this.camera.position.z = (VRMParser.getVRMVersion().version == 1) ? 1.0 : - 1.5;
+    this.controls.update();
   }
 
   // 球体メッシュを生成
