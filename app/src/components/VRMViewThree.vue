@@ -10,7 +10,6 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { VRMLoaderPlugin } from '@pixiv/three-vrm';
 
 @Component({})
 export default class VRMViewThree extends Vue {
@@ -39,12 +38,6 @@ export default class VRMViewThree extends Vue {
 
     // renderer が初期化済みなら何もしない
     if (this.renderer != null) return;
-
-    /*
-    this.loader.register((parser: any) => {
-      return new VRMLoaderPlugin(parser);
-    });
-    */
 
     // renderer 初期設定
     this.renderer = new THREE.WebGLRenderer({
