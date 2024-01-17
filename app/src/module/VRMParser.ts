@@ -1,5 +1,3 @@
-import { async } from "@firebase/util"
-
 /** VRMParser
  *  VRMの解析とテクスチャ置き換え等の機能をもつ
  * 
