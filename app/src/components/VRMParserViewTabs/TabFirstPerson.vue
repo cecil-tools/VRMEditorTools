@@ -1,16 +1,8 @@
 <template>
       <div class="tabContents tabFirstPerson" v-if="selectTabType == 'tab_first_person'">
       <div class="title">{{$t('titleFirstPerson')}}</div>
-      <table class="table">
-        <!--
-          <thead>
-          <tr>
-            <th>item</th>
-            <th>value</th>
-          </tr>
-        </thead>
-        -->
-        <tbody>
+      <table class="table" v-if="firstPerson != null">
+        <tbody v-if="vrmVersion == 0">
           <tr>
             <td class="label">X</td>
             <td><input type="number" step="0.01" v-model.number="firstPerson.firstPersonBoneOffset.x"></td>
@@ -24,17 +16,24 @@
             <td><input type="number" step="0.01" v-model.number="firstPerson.firstPersonBoneOffset.z"></td>
           </tr>
         </tbody>
+        <tbody v-if="vrmVersion == 1">
+          <tr>
+            <td class="label">X</td>
+            <td><input type="number" step="0.01" v-model.number="firstPerson.offsetFromHeadBone[0]"></td>
+          </tr>
+          <tr>
+            <td class="label">Y</td>
+            <td><input type="number" step="0.01" v-model.number="firstPerson.offsetFromHeadBone[1]"></td>
+          </tr>
+          <tr>
+            <td class="label">Z</td>
+            <td><input type="number" step="0.01" v-model.number="firstPerson.offsetFromHeadBone[2]"></td>
+          </tr>
+        </tbody>        
       </table>
+
       <div class="title">{{$t('titleScale')}}</div>
       <table class="table">
-        <!--
-        <thead>
-          <tr>
-            <th>item</th>
-            <th>value</th>
-          </tr>
-        </thead>
-        -->
         <tbody>
           <tr>
             <td class="label">Scale</td>
@@ -57,7 +56,7 @@
     </div>
 </template>
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator'
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator'
 import VRMParser from '@/module/VRMParser'
 
 @Component
@@ -74,9 +73,19 @@ export default class TabFirstPerson extends Vue {
     @Prop()
     vrmScale: any;
 
+    // VRM バージョン
+    vrmVersion = 0;
+    
+    @Watch('firstPerson')
+    private changeFirstPerson(val: any[], oldVal: any[]) {
+      this.vrmVersion = VRMParser.getVRMVersion().version;
+      console.log('changeFirstPerson vrmVersion', this.vrmVersion);
+      console.log('changeFirstPerson firstPerson', this.firstPerson);
+    }
+
     clickUpdateFirstPerson() {
         console.log('firstPerson', this.firstPerson)
-        VRMParser.setFirstPersonBoneOffset(this.firstPerson.firstPersonBoneOffset)
+        VRMParser.setFirstPersonBoneOffset(this.firstPerson)
     }
 
     changeScale() {

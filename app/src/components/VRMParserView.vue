@@ -56,13 +56,13 @@ export default class VRMParserView extends Vue {
   selectTabType = "tab_images"
 
   // 視点位置
-  firstPerson: any
+  firstPerson: any = null
 
   // スケール
-  vrmScale: any;
+  vrmScale: any = 1.0
 
   // スプリングボーン 一覧
-  springBoneSkirt: any
+  springBoneSkirt: any = []
 
   // モデル情報
   json: any = {}
