@@ -304,7 +304,8 @@ class VRMParser {
     // 一人称視点の視点のオフセット位置を取得
     public static getFirstPersonBone = (): {firstPerson: any} => {
         const extVRM = VRMParser.getVRMExtensionJson()
-        if ('specVersion' in extVRM) {
+        const version = VRMParser.getVRMVersion()
+        if (version.version == 1) {
             // VRM 1.0
             return extVRM.lookAt
         } else {

@@ -79,12 +79,9 @@ export default class TabFirstPerson extends Vue {
     @Watch('firstPerson')
     private changeFirstPerson(val: any[], oldVal: any[]) {
       this.vrmVersion = VRMParser.getVRMVersion().version;
-      console.log('changeFirstPerson vrmVersion', this.vrmVersion);
-      console.log('changeFirstPerson firstPerson', this.firstPerson);
     }
 
     clickUpdateFirstPerson() {
-        console.log('firstPerson', this.firstPerson)
         VRMParser.setFirstPersonBoneOffset(this.firstPerson)
     }
 
