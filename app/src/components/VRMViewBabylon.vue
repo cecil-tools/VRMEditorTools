@@ -12,7 +12,7 @@ import 'babylon-vrm-loader'
 
 @Component({
   components: {
-  } 
+  }
 })
 export default class VRMViewBabylon extends Vue {
   _scene: any = null
@@ -23,9 +23,9 @@ export default class VRMViewBabylon extends Vue {
 
   @Prop()
   path!: string
- 
+
   initScene() {
-    if (this._scene){
+    if (this._scene) {
       // Releases all held resources
       this._scene.dispose()
     }
@@ -49,17 +49,17 @@ export default class VRMViewBabylon extends Vue {
     // this._scene.activeCamera.alpha = BABYLON.Tools.ToRadians(0)
     this._scene.activeCamera.beta = BABYLON.Tools.ToRadians(70)
     this._scene.activeCamera.radius = 2.5
-    
+
     // ライトを作成
     const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), this._scene)
 
     this._engine.runRenderLoop(() => {
       this._scene.render()
     });
-    
+
     window.addEventListener('resize', () => {
       this._engine.resize()
-    });    
+    });
   }
 
   // VRM 読み込み
@@ -71,7 +71,7 @@ export default class VRMViewBabylon extends Vue {
 
       BABYLON.SceneLoader.AppendAsync(".", sceneFilename, this._scene, null, ".glb")
         .then((scene: any) => {
-          console.log('scene', scene)          
+          console.log('scene', scene)
           // セシル系で服がズレるので Armature を 取り出して Hips 位置を調整
           // Armature と Hips の座標を書き換えてみる          
           const armatureNode = scene.transformNodes.filter((n: any) => {
@@ -87,37 +87,40 @@ export default class VRMViewBabylon extends Vue {
           }
           resolve();
         })
-    })    
+    })
   }
-  
+
   // カメラのターゲット変更する
   setCameraTarget(vrmJson: any) {
     console.log('setCameraTarget')
     const targetBoneName = 'hips' // hips head
     const transformNodes = this._scene.transformNodes
     const extVRM = vrmJson.extensions.VRM
-    const humanBones = extVRM.humanoid.humanBones
-    humanBones.forEach((humanBone: any) => {
-      const bone = humanBone.bone;
-      if (targetBoneName == bone) {
-        const node = vrmJson.nodes[humanBone.node]
-        const transformNode = transformNodes.filter((n: any) => {
-          return (n.name == node.name)
-        })[0]
-        const position = transformNode.absolutePosition;
-        this._scene.activeCamera.setTarget(new BABYLON.Vector3(
-          position.x,
-          position.y,
-          position.z
-        ));
-      }
-    })
+
+    if (extVRM) {
+      const humanBones = extVRM.humanoid.humanBones
+      humanBones.forEach((humanBone: any) => {
+        const bone = humanBone.bone;
+        if (targetBoneName == bone) {
+          const node = vrmJson.nodes[humanBone.node]
+          const transformNode = transformNodes.filter((n: any) => {
+            return (n.name == node.name)
+          })[0]
+          const position = transformNode.absolutePosition;
+          this._scene.activeCamera.setTarget(new BABYLON.Vector3(
+            position.x,
+            position.y,
+            position.z
+          ));
+        }
+      })
+    }
   }
 
   // 球体メッシュを生成
   createSphere(name: any, position: any, color: BABYLON.Color3, size: number) {
     // 球体メッシュを生成
-    const sphere = BABYLON.MeshBuilder.CreateSphere(name, {diameter: size}, this._scene)
+    const sphere = BABYLON.MeshBuilder.CreateSphere(name, { diameter: size }, this._scene)
     // 球体の位置を設定
     sphere.position.x = position.x;
     sphere.position.y = position.y;
@@ -135,59 +138,62 @@ export default class VRMViewBabylon extends Vue {
     console.log('drawFirstPerson', vrmJson)
 
     const extVRM = vrmJson.extensions.VRM
-    const firstPersonBone = vrmJson.nodes[extVRM.firstPerson.firstPersonBone]
-    const firstPersonBoneOffset = extVRM.firstPerson.firstPersonBoneOffset
-    console.log('firstPersonBone', firstPersonBone)
-    console.log('firstPersonBoneOffset', firstPersonBoneOffset)
 
-    // 実際に表示されているモデルの表示位置を取得するために transformNodes を取り出す
-    const transformNodes = this._scene.transformNodes
+    if (extVRM) {
+      const firstPersonBone = vrmJson.nodes[extVRM.firstPerson.firstPersonBone]
+      const firstPersonBoneOffset = extVRM.firstPerson.firstPersonBoneOffset
+      console.log('firstPersonBone', firstPersonBone)
+      console.log('firstPersonBoneOffset', firstPersonBoneOffset)
 
-    // firstPersonBone.name と一致する transformNode を取得する
-    const transformNode = transformNodes.filter((n: any) => {
-      return (n.name == firstPersonBone.name)
-    })[0]
-    const position = {
-      x: transformNode.absolutePosition.x + firstPersonBoneOffset.x * -1.0,
-      y: transformNode.absolutePosition.y + firstPersonBoneOffset.y,
-      z: transformNode.absolutePosition.z + firstPersonBoneOffset.z
-    }
-    console.log('firstPersonBone position', position)
-    // const sphere = this.createSphere('firstPerson', position, BABYLON.Color3.Red(), 0.05)
-    // TODO firstPerson sphere を gizmos 表示する
+      // 実際に表示されているモデルの表示位置を取得するために transformNodes を取り出す
+      const transformNodes = this._scene.transformNodes
 
-    /*
-    // 試しに humanBones の位置に 球体を置いてみる
-    const humanBones = extVRM.humanoid.humanBones
-    humanBones.forEach((humanBone: any) => {
-      const name = humanBone.bone;
-      const node = vrmJson.nodes[humanBone.node]
-      // console.log('humanBone', name, node)
-      // node.name と一致する transformNode を取得する
+      // firstPersonBone.name と一致する transformNode を取得する
       const transformNode = transformNodes.filter((n: any) => {
-        return (n.name == node.name)
+        return (n.name == firstPersonBone.name)
       })[0]
-      const position = transformNode.absolutePosition;
+      const position = {
+        x: transformNode.absolutePosition.x + firstPersonBoneOffset.x * -1.0,
+        y: transformNode.absolutePosition.y + firstPersonBoneOffset.y,
+        z: transformNode.absolutePosition.z + firstPersonBoneOffset.z
+      }
+      console.log('firstPersonBone position', position)
+      // const sphere = this.createSphere('firstPerson', position, BABYLON.Color3.Red(), 0.05)
+      // TODO firstPerson sphere を gizmos 表示する
 
-      // 球体を表示
-      this.createSphere(name, position, BABYLON.Color3.Blue(), 0.03)
-    })
-    */
+      /*
+      // 試しに humanBones の位置に 球体を置いてみる
+      const humanBones = extVRM.humanoid.humanBones
+      humanBones.forEach((humanBone: any) => {
+        const name = humanBone.bone;
+        const node = vrmJson.nodes[humanBone.node]
+        // console.log('humanBone', name, node)
+        // node.name と一致する transformNode を取得する
+        const transformNode = transformNodes.filter((n: any) => {
+          return (n.name == node.name)
+        })[0]
+        const position = transformNode.absolutePosition;
+  
+        // 球体を表示
+        this.createSphere(name, position, BABYLON.Color3.Blue(), 0.03)
+      })
+      */
+    }
   }
 }
 </script>
 
 <style scoped>
-  #canvas {    
-    width: 600px;
-    height: 540px;
-    background-color: gray;
+#canvas {
+  width: 600px;
+  height: 540px;
+  background-color: gray;
+}
+
+@media screen and (max-width: 480px) {
+  #canvas {
+    width: 300px;
+    height: 400px;
   }
-  
-  @media screen and (max-width: 480px) { 
-    #canvas {    
-      width: 300px;
-      height: 400px;
-    }
-  }
+}
 </style>
