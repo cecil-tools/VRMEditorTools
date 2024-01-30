@@ -9,7 +9,7 @@
       </div>
     </div>
     <div class="container vrmparserContainer">
-      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" />
+      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" />
     </div>
 </div>
 </template>
@@ -85,6 +85,12 @@ export default class Main extends Vue {
   drawFirstPerson(vrmJson: any) {
     const vrmview = this.$refs.vrmview as VRMView
     vrmview.drawFirstPerson(vrmJson)
+  }
+
+  // 表情変更
+  changeBlendShape(name: string) {
+    const vrmview = this.$refs.vrmview as VRMView
+    vrmview.changeBlendShape(name)
   }
 }
 </script>

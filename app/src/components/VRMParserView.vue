@@ -8,17 +8,19 @@
         <li @click="clickSelectTab('tab_first_person')">{{$t('tabFirstPerson')}}</li>
         <li @click="clickSelectTab('tab_meta')">{{$t('tabMeta')}}</li>
         <li @click="clickSelectTab('tab_vroid')">{{$t('tabVroid')}}</li>
+        <li @click="clickSelectTab('tab_blendshape')">{{$t('tabBlendShape')}}</li>
         <!--
         <li @click="clickSelectTab('tab_short_video')">{{$t('tabShortVideo')}}</li>
         -->
       </ul>
     </div>
     <TabImages :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
-    <TabFirstPerson :selectTabType="selectTabType" :firstPerson="firstPerson" :vrmScale="vrmScale" :drawVrm="drawVrm" />
+    <TabFirstPerson :selectTabType="selectTabType" :firstPerson="firstPerson" :vrmScale="vrmScale" :drawVrm="drawVrm" :vrmVersion="vrmVersion" />
     <TabVroid :selectTabType="selectTabType" :springBoneSkirt="springBoneSkirt" />
     <TabShortVideo :selectTabType="selectTabType" />
     <TabMaterials :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
     <TabMeta :selectTabType="selectTabType" :json="json" />
+    <TabBlendShape :selectTabType="selectTabType" :drawVrm="drawVrm" :blendShapeGroups="blendShapeGroups" :json="json" :vrmVersion="vrmVersion" :changeBlendShape="changeBlendShape" />
   </div>
 </template>
 
@@ -32,6 +34,7 @@ import TabVroid from '@/components/VRMParserViewTabs/TabVroid.vue'
 import TabShortVideo from '@/components/VRMParserViewTabs/TabShortVideo.vue'
 import TabMaterials from '@/components/VRMParserViewTabs/TabMaterials.vue'
 import TabMeta from '@/components/VRMParserViewTabs/TabMeta.vue'
+import TabBlendShape from './VRMParserViewTabs/TabBlendShape.vue'
 
 @Component({
   components: {
@@ -40,7 +43,8 @@ import TabMeta from '@/components/VRMParserViewTabs/TabMeta.vue'
     TabVroid,
     TabShortVideo,
     TabMaterials,
-    TabMeta
+    TabMeta,
+    TabBlendShape
   }
 })
 export default class VRMParserView extends Vue {
@@ -49,6 +53,9 @@ export default class VRMParserView extends Vue {
 
   @Prop()
   drawFirstPerson: (vrmJson: any) => void
+
+  @Prop()
+  changeBlendShape: (name: string) => void
 
   vrmImages: any[] = []
   
@@ -63,6 +70,12 @@ export default class VRMParserView extends Vue {
 
   // スプリングボーン 一覧
   springBoneSkirt: any = []
+
+  // ブレンドシェイプグループ 
+  blendShapeGroups: any = []
+
+  // バージョン
+  vrmVersion: any = null
 
   // モデル情報
   json: any = {}
@@ -110,6 +123,13 @@ export default class VRMParserView extends Vue {
           })[0]
           console.log('springBoneSkirt', this.springBoneSkirt)
         }
+
+        // ブレンドシェイプグループ取得
+        this.blendShapeGroups = VRMParser.getBlendShapeGroups()
+        console.log('blendShapeGroups', this.blendShapeGroups)
+
+        // バージョン
+        this.vrmVersion = VRMParser.getVRMVersion()
 
         // モデル情報
         this.json = VRMParser.getVRMExtensionJson();

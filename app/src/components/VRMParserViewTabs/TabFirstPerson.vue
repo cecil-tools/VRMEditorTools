@@ -2,7 +2,7 @@
       <div class="tabContents tabFirstPerson" v-if="selectTabType == 'tab_first_person'">
       <div class="title">{{$t('titleFirstPerson')}}</div>
       <table class="table" v-if="firstPerson != null">
-        <tbody v-if="vrmVersion == 0">
+        <tbody v-if="vrmVersion.version == 0">
           <tr>
             <td class="label">X</td>
             <td><input type="number" step="0.01" v-model.number="firstPerson.firstPersonBoneOffset.x"></td>
@@ -73,13 +73,8 @@ export default class TabFirstPerson extends Vue {
     @Prop()
     vrmScale: any;
 
-    // VRM バージョン
-    vrmVersion = 0;
-    
-    @Watch('firstPerson')
-    private changeFirstPerson(val: any[], oldVal: any[]) {
-      this.vrmVersion = VRMParser.getVRMVersion().version;
-    }
+    @Prop()
+    vrmVersion: any;
 
     clickUpdateFirstPerson() {
         VRMParser.setFirstPersonBoneOffset(this.firstPerson)

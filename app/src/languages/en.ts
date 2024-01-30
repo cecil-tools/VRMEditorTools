@@ -19,7 +19,9 @@ export default {
     tabShortVideoBtnBackgroundImage: 'Upload Image',
     tabShortVideoBtnCreateVideo: 'Create Video',
     tabMaterials: 'Materials',
+    tabBlendShape: 'BlendShape',
     tabMeta: 'Meta',
+    updateMeta: 'Update',
 
     // モデル情報
     meta: {
@@ -38,5 +40,23 @@ export default {
         otherLicenseUrl: 'other license url',
         otherPermissionUrl: 'other permission url',
         licenseName: 'license type',
-    }  
+    },
+
+    // ブレンドシェイプ
+    blendShape: {
+        select: "Select BlendShapeClip",
+        neutral: "NEUTRAL",
+        happy: "HAPPY",
+        joy: "JOY",
+        angry: "ANGRY",
+        sorrow: "SORROW",
+        fun: "FUN",
+        relaxed: "RELAXED",
+        surprised: "SURPRISED",
+        aa: "aa",
+        ih: "ih",
+        ou: "ou",
+        ee: "ee",
+        oh: "oh",
+    }
 }

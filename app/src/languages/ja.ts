@@ -20,6 +20,7 @@ export default {
     tabShortVideoBtnCreateVideo: "動画作成",
     tabMaterials: 'マテリアル',
     tabMeta: 'モデル情報',
+    tabBlendShape: 'ブレンドシェイプ',
     updateMeta: '更新',
 
     // モデル情報
@@ -39,5 +40,23 @@ export default {
         otherLicenseUrl: 'その他のライセンス条件',
         otherPermissionUrl: 'その他の権利情報',
         licenseName: 'ライセンス タイプ',
+    },
+
+    // ブレンドシェイプ
+    blendShape: {
+        select: "Select BlendShapeClip",
+        neutral: "ニュートラル(neutral)",
+        happy: "喜び(happy)",
+        joy: "喜び(joy)",
+        angry: "怒り(angry)",
+        sorrow: "悲しみ(sorrow)",
+        fun: "楽しい(fun)",
+        relaxed: "楽しい(relaxed)",
+        surprised: "驚き(surprised)",
+        aa: "あ(aa)",
+        ih: "い(ih)",
+        ou: "う(ou)",
+        ee: "え(ee)",
+        oh: "お(oh)",
     }
 }

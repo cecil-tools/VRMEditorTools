@@ -499,11 +499,34 @@ class VRMParser {
     // VRM バージョン情報を取得する
     public static getVRMVersion() {
         const extVRM = VRMParser.getVRMExtensionJson()
-        if ('exporterVersion' in extVRM) {
-            return {version: 0, value: extVRM.exporterVersion}
+        if (extVRM == null) {
+            return {version: 0, value: "", generator: ""}
         }
-        return {version: 1, value: extVRM.specVersion}
-    }    
+        if ('exporterVersion' in extVRM) {
+            return {
+                version: 0, 
+                value: extVRM.exporterVersion.replace("Uni", ""),
+                generator: extVRM.exporterVersion
+            }
+        }
+        return {
+            version: 1,
+            value: `VRM-${extVRM.specVersion}`,
+            generator: VRMParser.json.asset.generator
+        }
+    }
+    
+    // ブレンドシェイプグループ を取得する
+    public static getBlendShapeGroups = () => {
+        const version = VRMParser.getVRMVersion()
+        const extVRM = VRMParser.getVRMExtensionJson()
+        if (version.version == 0) {
+            return extVRM.blendShapeMaster.blendShapeGroups
+        }
+        else {
+            return extVRM.expressions.preset
+        }
+    }
 }
 
 export default VRMParser;
