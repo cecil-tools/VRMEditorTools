@@ -7,9 +7,13 @@
         <label for="btnExport">{{$t('btnExport')}}</label>
         <input id="btnExport" type="button" @click="clickExport" />
       </div>
+      <div>
+        <label for="btnCapture3Views">3面図保存</label>
+        <input id="btnCapture3Views" type="button" @click="clickCapture3Views" />
+      </div>
     </div>
     <div class="container vrmparserContainer">
-      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" />
+      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" />
     </div>
 </div>
 </template>
@@ -65,6 +69,15 @@ export default class Main extends Vue {
     vrmparser.downloadFile()
   }
 
+  clickCapture3Views() {
+    const vrmview = this.$refs.vrmview as any
+    if (vrmview.captureThreeViews) {
+        vrmview.captureThreeViews();
+    } else {
+        console.error("captureThreeViews method not found on VRMView");
+    }
+  }
+
   drawVrm(file: File) {
     const vrmview = this.$refs.vrmview as VRMView
     vrmview.drawVrm( file )
@@ -91,6 +104,27 @@ export default class Main extends Vue {
   changeBlendShape(name: string) {
     const vrmview = this.$refs.vrmview as VRMView
     vrmview.changeBlendShape(name)
+  }
+
+  // タブ切り替えイベント
+  onSelectTab(type: string) {
+    const vrmview = this.$refs.vrmview as any
+    if (type === 'tab_blendshape') {
+      if (vrmview.focusFace) {
+        vrmview.focusFace();
+      }
+    } else {
+      if (vrmview.resetCamera) {
+          vrmview.resetCamera();
+      }
+    }
+  }
+
+  onDownloadAllBlendShapes(names: string[]) {
+      const vrmview = this.$refs.vrmview as any
+      if (vrmview.captureBlendShapes) {
+          vrmview.captureBlendShapes(names);
+      }
   }
 }
 </script>

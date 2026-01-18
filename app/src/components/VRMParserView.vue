@@ -20,7 +20,7 @@
     <TabShortVideo :selectTabType="selectTabType" />
     <TabMaterials :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
     <TabMeta :selectTabType="selectTabType" :json="json" />
-    <TabBlendShape :selectTabType="selectTabType" :drawVrm="drawVrm" :blendShapeGroups="blendShapeGroups" :json="json" :vrmVersion="vrmVersion" :changeBlendShape="changeBlendShape" />
+    <TabBlendShape :selectTabType="selectTabType" :drawVrm="drawVrm" :blendShapeGroups="blendShapeGroups" :json="json" :vrmVersion="vrmVersion" :changeBlendShape="changeBlendShape" @download-all-blendshapes="onDownloadAllBlendShapes" />
   </div>
 </template>
 
@@ -83,6 +83,7 @@ export default class VRMParserView extends Vue {
   clickSelectTab(type: string) {
     console.log('clickSelectTab', type)
     this.selectTabType = type 
+    this.$emit('select-tab', type)
   }
 
   parse(selectVrmFile: File): Promise<any> {
@@ -153,6 +154,10 @@ export default class VRMParserView extends Vue {
       .catch(e => {
         console.error('error', e)
       })
+  }
+
+  onDownloadAllBlendShapes(names: string[]) {
+      this.$emit('download-all-blendshapes', names);
   }
 
 }

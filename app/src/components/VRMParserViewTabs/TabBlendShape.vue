@@ -1,5 +1,10 @@
 <template>
     <div class="tabContents tabBlendShape" v-if="selectTabType == 'tab_blendshape'">
+        <div class="buttons download">
+            <button class="button download" @click="clickDownloadAll">Download All</button>
+            <div class="description">表情を撮影してダウンロードする</div>
+        </div>
+        <hr />
         <div class="buttons" v-if="vrmVersion.version == 0">
             <div v-for="blendShapeGroup,i in blendShapeGroups" :key="i">
                 <button class="button" @click="selectBlendShape(blendShapeGroup.presetName)">{{blendShapeName(blendShapeGroup.presetName)}}</button>
@@ -57,10 +62,23 @@ export default class TabBlendShape extends Vue {
 
         // TODO メッシュ一覧を表示
     }
+
+    clickDownloadAll() {
+        let names: string[] = [];
+        if (this.vrmVersion.version == 0) {
+            names = this.blendShapeGroups.map((g: any) => g.presetName);
+        } else {
+            names = Object.keys(this.blendShapeGroups);
+        }
+        console.log('clickDownloadAll', names);
+        this.$emit('download-all-blendshapes', names);
+    }
 }
 </script>
 
 <style scoped lang="scss">
+$white: #fff;
+
 .tabBlendShape {
 
     .title {
@@ -70,12 +88,29 @@ export default class TabBlendShape extends Vue {
     .buttons {
         width: 320px;
         margin-top: 3px;
+        overflow: hidden;
         .button {
             float: left;
             width: 100px;
             height: 60px;
             font-size: normal;
             margin: 2px;
+        }
+
+        &.download {
+           width: 100%;
+           .button {
+               width: 150px;
+               height: 40px;
+           }
+           .description {
+               float: left;
+               width: 100%;
+               font-size: 12px;
+               color: #333;
+               margin-top: 5px;
+               text-align: left;
+           }
         }
     }
 }
