@@ -17,7 +17,7 @@
         </ol>      
       </div>
       <h2>要望,感想,お問い合わせ</h2>
-      <p><a href="https://forms.gle/ddmZhdfFkNRSwLM99">Googleフォーム</a></p>
+      <p><a href="https://forms.gle/n19GEjgqjNHnfCyg6">Googleフォーム</a></p>
       <h2>リポジトリ</h2>
       <p><a href="https://github.com/cecil-tools/VRMEditorTools">VRMEditorTools</a></p>
       <h2>作った人</h2>
