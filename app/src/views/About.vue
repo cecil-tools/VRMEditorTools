@@ -22,9 +22,6 @@
       <p><a href="https://github.com/cecil-tools/VRMEditorTools">VRMEditorTools</a></p>
       <h2>作った人</h2>
       <p><a href="https://twitter.com/t_furu">t_furu</a></p> 
-      <h2>支援</h2>
-      <p><a href="https://www.amazon.co.jp/hz/wishlist/ls/1U1BNCYHORFTC?ref_=wl_share">Amazonギフト券 500円を送る</a></p>
-      <p>モチベーション維持,サーバ維持費になるのでお待ちしてます</p>
 
       <h2>他のツール</h2>
       <p><a href="https://vrmeditor.tools/">VRMEditorTools</a></p>
