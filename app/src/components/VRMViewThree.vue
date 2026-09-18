@@ -10,6 +10,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { VRMLoaderPlugin } from '@pixiv/three-vrm';
 import JSZip from 'jszip';
 
@@ -21,6 +22,9 @@ export default class VRMViewThree extends Vue {
   scene = new THREE.Scene();
   camera: any | null = null;
   controls: any | null = null;
+  transformControls: any | null = null;
+  firstPersonHelper: any | null = null;
+  currentVrmVersion = 0;
   loader = new GLTFLoader();
   gltf: any = null;
 
@@ -98,6 +102,8 @@ export default class VRMViewThree extends Vue {
     this.controls.target.y = 1.0;
     this.controls.update();
 
+    this.initTransformControls(canvas);
+
     this.update();
   }
 
@@ -113,6 +119,7 @@ export default class VRMViewThree extends Vue {
     return new Promise((resolve, reject) => {
       // 表示の初期化
       this.initScene();
+      this.hideFirstPersonGizmo();
       
       // シーンから VRMを削除
       if (this.gltf != null) {
@@ -181,9 +188,178 @@ export default class VRMViewThree extends Vue {
     this.controls.update();
   }
 
-  // 球体メッシュを生成
-  createSphere = (name: any, position: any, color: any, size: number) => {
+  // TransformControls 初期化
+  initTransformControls = (canvas: HTMLCanvasElement) => {
+    if (this.transformControls != null) return;
+
+    this.transformControls = new TransformControls(this.camera!, canvas);
+    this.transformControls.setMode('translate');
+    this.transformControls.setSize(0.6);
+
+    // ドラッグ中のカメラ操作無効化
+    this.transformControls.addEventListener('dragging-changed', (event: any) => {
+      if (this.controls) {
+        this.controls.enabled = !event.value;
+      }
+    });
+
+    // ギズモドラッグ時の座標変換・親へのイベント通知
+    this.transformControls.addEventListener('objectChange', () => {
+      this.onGizmoChange();
+    });
+
+    this.scene.add(this.transformControls);
+
+    // 視点マーカー（半透明球体）の作成
+    // 深度テストを無効にし、頭部内部に入っても埋もれないよう最前面描画
+    const geometry = new THREE.SphereGeometry(0.025, 16, 16);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x00ffff,
+      wireframe: true,
+      depthTest: false,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.85
+    });
+    this.firstPersonHelper = new THREE.Mesh(geometry, material);
+    this.firstPersonHelper.renderOrder = 999;
+    this.firstPersonHelper.visible = false;
+    this.scene.add(this.firstPersonHelper);
+  }
+
+  // 頭部ボーンノードを取得
+  getHeadBoneNode = (): any => {
+    if (!this.gltf || !this.gltf.userData.vrm) return null;
+    const vrm = this.gltf.userData.vrm;
+    if (vrm.humanoid) {
+      if (vrm.humanoid.getRawBoneNode) {
+        return vrm.humanoid.getRawBoneNode('head');
+      } else if (vrm.humanoid.getBoneNode) {
+        return vrm.humanoid.getBoneNode('head');
+      }
+    }
     return null;
+  }
+
+  // ギズモ移動時のコールバック
+  onGizmoChange = () => {
+    const headNode = this.getHeadBoneNode();
+    if (!headNode || !this.firstPersonHelper) return;
+
+    headNode.updateWorldMatrix(true, false);
+    const invHeadMatrix = headNode.matrixWorld.clone().invert();
+    const localPos = this.firstPersonHelper.position.clone().applyMatrix4(invHeadMatrix);
+
+    let x = parseFloat(localPos.x.toFixed(4));
+    let y = parseFloat(localPos.y.toFixed(4));
+    let z = 0;
+
+    if (this.currentVrmVersion === 1) {
+      z = parseFloat(localPos.z.toFixed(4));
+    } else {
+      // VRM 0.x はローカルZ軸の正負が反転
+      z = parseFloat((-localPos.z).toFixed(4));
+    }
+
+    this.$emit('change-first-person-offset', { x, y, z });
+  }
+
+  // firstPerson オブジェクトから offset を抽出
+  extractOffset = (firstPerson: any, version: number): { x: number, y: number, z: number } => {
+    if (!firstPerson) return { x: 0, y: 0.06, z: 0 };
+    if (version === 1) {
+      const arr = firstPerson.offsetFromHeadBone || [0, 0.06, 0];
+      return { x: arr[0] ?? 0, y: arr[1] ?? 0.06, z: arr[2] ?? 0 };
+    } else {
+      const offset = firstPerson.firstPersonBoneOffset || { x: 0, y: 0.06, z: 0 };
+      return { x: offset.x ?? 0, y: offset.y ?? 0.06, z: offset.z ?? 0 };
+    }
+  }
+
+  // 視点マーカーの位置を頭部ボーンのローカルオフセットから更新
+  updateHelperPosition = (x: number, y: number, z: number) => {
+    const headNode = this.getHeadBoneNode();
+    if (!headNode || !this.firstPersonHelper) return;
+
+    headNode.updateWorldMatrix(true, false);
+    let localVec: any;
+    if (this.currentVrmVersion === 1) {
+      localVec = new THREE.Vector3(x, y, z);
+    } else {
+      localVec = new THREE.Vector3(x, y, -z);
+    }
+
+    const worldPos = localVec.clone().applyMatrix4(headNode.matrixWorld);
+    this.firstPersonHelper.position.copy(worldPos);
+
+    const headQuat = new THREE.Quaternion();
+    headNode.getWorldQuaternion(headQuat);
+    this.firstPersonHelper.quaternion.copy(headQuat);
+
+    if (this.transformControls) {
+      this.transformControls.updateMatrixWorld();
+    }
+  }
+
+  // ギズモと視点マーカーを表示
+  public showFirstPersonGizmo = (firstPerson: any, vrmVersion: any) => {
+    const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+    if (canvas) {
+      this.initTransformControls(canvas);
+    }
+    if (!this.firstPersonHelper || !this.transformControls) return;
+
+    this.currentVrmVersion = (vrmVersion && typeof vrmVersion.version === 'number') ? vrmVersion.version : 0;
+    const offset = this.extractOffset(firstPerson, this.currentVrmVersion);
+
+    this.updateHelperPosition(offset.x, offset.y, offset.z);
+
+    this.firstPersonHelper.visible = true;
+    this.transformControls.attach(this.firstPersonHelper);
+
+    // 視点にカメラをフォーカス
+    this.focusFirstPerson();
+  }
+
+  // ギズモと視点マーカーを非表示
+  public hideFirstPersonGizmo = () => {
+    if (this.transformControls) {
+      this.transformControls.detach();
+    }
+    if (this.firstPersonHelper) {
+      this.firstPersonHelper.visible = false;
+    }
+  }
+
+  // UI入力からの視点オフセット更新
+  public setFirstPersonOffset = (offset: { x: number, y: number, z: number }) => {
+    if (!this.firstPersonHelper) return;
+    this.updateHelperPosition(offset.x, offset.y, offset.z);
+  }
+
+  // 視点位置にカメラをフォーカス
+  public focusFirstPerson = () => {
+    if (!this.camera || !this.controls) return;
+    const headNode = this.getHeadBoneNode();
+    if (!headNode) return;
+
+    const targetPos = new THREE.Vector3();
+    if (this.firstPersonHelper && this.firstPersonHelper.visible) {
+      this.firstPersonHelper.getWorldPosition(targetPos);
+    } else {
+      headNode.getWorldPosition(targetPos);
+    }
+
+    this.controls.target.copy(targetPos);
+
+    const fov = this.camera.fov * (Math.PI / 180);
+    const focusSize = 0.35;
+    let distance = Math.abs((focusSize / 2) / Math.tan(fov / 2));
+    distance *= 1.8;
+
+    const sign = (this.currentVrmVersion === 1) ? 1.0 : -1.0;
+    this.camera.position.set(targetPos.x, targetPos.y, targetPos.z + (distance * sign));
+    this.controls.update();
   }
 
   // firstPersonBoneOffset 位置に球体を表示数する

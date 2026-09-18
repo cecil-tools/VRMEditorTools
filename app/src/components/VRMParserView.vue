@@ -15,7 +15,7 @@
       </ul>
     </div>
     <TabImages :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
-    <TabFirstPerson :selectTabType="selectTabType" :firstPerson="firstPerson" :vrmScale="vrmScale" :drawVrm="drawVrm" :vrmVersion="vrmVersion" />
+    <TabFirstPerson ref="tabFirstPerson" :selectTabType="selectTabType" :firstPerson="firstPerson" :vrmScale="vrmScale" :drawVrm="drawVrm" :vrmVersion="vrmVersion" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" />
     <TabVroid :selectTabType="selectTabType" :springBoneSkirt="springBoneSkirt" />
     <TabShortVideo :selectTabType="selectTabType" />
     <TabMaterials :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
@@ -84,6 +84,21 @@ export default class VRMParserView extends Vue {
     console.log('clickSelectTab', type)
     this.selectTabType = type 
     this.$emit('select-tab', type)
+  }
+
+  onChangeFirstPersonFromUI(offset: { x: number, y: number, z: number }) {
+    this.$emit('change-first-person-offset', offset);
+  }
+
+  onFocusFirstPerson() {
+    this.$emit('focus-first-person');
+  }
+
+  updateFirstPersonFromGizmo(offset: { x: number, y: number, z: number }) {
+    const tab = this.$refs.tabFirstPerson as any;
+    if (tab && tab.updateOffsetFromGizmo) {
+      tab.updateOffsetFromGizmo(offset);
+    }
   }
 
   parse(selectVrmFile: File): Promise<any> {
