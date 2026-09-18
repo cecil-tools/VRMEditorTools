@@ -2,7 +2,7 @@
   <div class="main">
     <div class="container vrmviewContainer">
       <FileUpload :changeFile="changeFile" />
-      <VRMView ref="vrmview" :path="path" :debug="false" />
+      <VRMView ref="vrmview" :path="path" :debug="false" @change-first-person-offset="onChangeFirstPersonFromGizmo" />
       <div>
         <label for="btnExport">{{$t('btnExport')}}</label>
         <input id="btnExport" type="button" @click="clickExport" />
@@ -13,7 +13,7 @@
       </div>
     </div>
     <div class="container vrmparserContainer">
-      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" />
+      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" />
     </div>
 </div>
 </template>
@@ -109,14 +109,49 @@ export default class Main extends Vue {
   // タブ切り替えイベント
   onSelectTab(type: string) {
     const vrmview = this.$refs.vrmview as any
+    const vrmparser = this.$refs.vrmparser as any
     if (type === 'tab_blendshape') {
+      if (vrmview.hideFirstPersonGizmo) {
+        vrmview.hideFirstPersonGizmo();
+      }
       if (vrmview.focusFace) {
         vrmview.focusFace();
       }
+    } else if (type === 'tab_first_person') {
+      if (vrmview.showFirstPersonGizmo && vrmparser) {
+        vrmview.showFirstPersonGizmo(vrmparser.firstPerson, vrmparser.vrmVersion);
+      }
     } else {
+      if (vrmview.hideFirstPersonGizmo) {
+        vrmview.hideFirstPersonGizmo();
+      }
       if (vrmview.resetCamera) {
           vrmview.resetCamera();
       }
+    }
+  }
+
+  // ギズモドラッグによるオフセット変更をUIへ反映
+  onChangeFirstPersonFromGizmo(offset: { x: number, y: number, z: number }) {
+    const vrmparser = this.$refs.vrmparser as any;
+    if (vrmparser && vrmparser.updateFirstPersonFromGizmo) {
+      vrmparser.updateFirstPersonFromGizmo(offset);
+    }
+  }
+
+  // UI操作によるオフセット変更を3Dビュー（ギズモ）へ反映
+  onChangeFirstPersonFromUI(offset: { x: number, y: number, z: number }) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.setFirstPersonOffset) {
+      vrmview.setFirstPersonOffset(offset);
+    }
+  }
+
+  // 視点位置へのカメラフォーカス
+  onFocusFirstPerson() {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.focusFirstPerson) {
+      vrmview.focusFirstPerson();
     }
   }
 
