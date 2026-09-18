@@ -64,7 +64,7 @@
 
         <!-- バインド追加フォーム -->
         <div class="add-bind-box" v-if="morphMeshes && morphMeshes.length > 0">
-          <div class="bind-inputs">
+          <div class="bind-selects-row">
             <select v-model.number="tempBind.mesh" class="select-box" @change="onTempBindMeshChange">
               <option v-for="m in morphMeshes" :key="m.meshIndex" :value="m.meshIndex">
                 {{ m.name }}
@@ -75,23 +75,44 @@
                 {{ getMorphTargetName(tempBind.mesh, idx) }}
               </option>
             </select>
-            <div class="weight-input-wrap">
-              <span>{{ tempBind.weight }}%</span>
-              <input type="range" min="0" max="100" v-model.number="tempBind.weight" class="range-slider" />
-            </div>
           </div>
-          <!-- モーフ動作確認スライダー -->
-          <div class="test-morph-wrap">
-            <span class="test-label">🔍 {{ $t('blendShape.testMorph') }}:</span>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              v-model.number="tempBindTestWeight"
-              @input="onTestMorphInput(tempBind.mesh, tempBind.index, tempBindTestWeight)"
-              class="range-slider test-slider"
-            />
+          <div class="add-bind-controls">
+            <div class="control-row">
+              <span class="control-label">{{ $t('blendShape.bindWeight') }}:</span>
+              <div class="slider-with-val">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  v-model.number="tempBind.weight"
+                  class="range-slider"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  v-model.number="tempBind.weight"
+                  class="number-input-mini"
+                />
+                <span class="unit">%</span>
+              </div>
+            </div>
+            <!-- モーフ動作確認スライダー -->
+            <div class="control-row test-row">
+              <span class="control-label test-label">🔍 {{ $t('blendShape.testMorph') }}:</span>
+              <div class="slider-with-val">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  v-model.number="tempBindTestWeight"
+                  @input="onTestMorphInput(tempBind.mesh, tempBind.index, tempBindTestWeight)"
+                  class="range-slider test-slider"
+                />
+                <span class="test-val">{{ Math.round(tempBindTestWeight * 100) }}%</span>
+              </div>
+            </div>
           </div>
           <button class="btn-add-bind" @click="addNewClipBind">
             ＋ {{ $t('blendShape.btnAddBind') }}
@@ -196,7 +217,7 @@
 
         <!-- 既存クリップへのバインド追加 -->
         <div class="add-bind-box" v-if="morphMeshes && morphMeshes.length > 0">
-          <div class="bind-inputs">
+          <div class="bind-selects-row">
             <select v-model.number="tempBind.mesh" class="select-box" @change="onTempBindMeshChange">
               <option v-for="m in morphMeshes" :key="m.meshIndex" :value="m.meshIndex">
                 {{ m.name }}
@@ -207,23 +228,44 @@
                 {{ getMorphTargetName(tempBind.mesh, idx) }}
               </option>
             </select>
-            <div class="weight-input-wrap">
-              <span>{{ tempBind.weight }}%</span>
-              <input type="range" min="0" max="100" v-model.number="tempBind.weight" class="range-slider" />
-            </div>
           </div>
-          <!-- モーフテスト動作 -->
-          <div class="test-morph-wrap">
-            <span class="test-label">🔍 {{ $t('blendShape.testMorph') }}:</span>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              v-model.number="tempBindTestWeight"
-              @input="onTestMorphInput(tempBind.mesh, tempBind.index, tempBindTestWeight)"
-              class="range-slider test-slider"
-            />
+          <div class="add-bind-controls">
+            <div class="control-row">
+              <span class="control-label">{{ $t('blendShape.bindWeight') }}:</span>
+              <div class="slider-with-val">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  v-model.number="tempBind.weight"
+                  class="range-slider"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  v-model.number="tempBind.weight"
+                  class="number-input-mini"
+                />
+                <span class="unit">%</span>
+              </div>
+            </div>
+            <!-- モーフテスト動作 -->
+            <div class="control-row test-row">
+              <span class="control-label test-label">🔍 {{ $t('blendShape.testMorph') }}:</span>
+              <div class="slider-with-val">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  v-model.number="tempBindTestWeight"
+                  @input="onTestMorphInput(tempBind.mesh, tempBind.index, tempBindTestWeight)"
+                  class="range-slider test-slider"
+                />
+                <span class="test-val">{{ Math.round(tempBindTestWeight * 100) }}%</span>
+              </div>
+            </div>
           </div>
           <button class="btn-add-bind" @click="addEditingBind">
             ＋ {{ $t('blendShape.btnAddBind') }}
@@ -1058,7 +1100,7 @@ $text-sub: #64748b;
 
               .range-slider {
                 flex: 1;
-                min-width: 80px;
+                min-width: 0;
               }
 
               .unit {
@@ -1082,56 +1124,78 @@ $text-sub: #64748b;
     /* バインド追加ボックス */
     .add-bind-box {
       margin-top: 8px;
-      padding: 8px;
+      padding: 8px 10px;
       background: #ffffff;
       border: 1px dashed #94a3b8;
       border-radius: 6px;
+      box-sizing: border-box;
+      width: 100%;
 
-      .bind-inputs {
+      .bind-selects-row {
         display: flex;
-        gap: 6px;
-        align-items: center;
-        flex-wrap: wrap;
-        margin-bottom: 6px;
+        gap: 8px;
+        margin-bottom: 8px;
+        width: 100%;
+        box-sizing: border-box;
 
         .select-box {
           flex: 1;
-          min-width: 130px;
+          min-width: 0;
+          max-width: none;
+          width: 50%;
+          box-sizing: border-box;
+          font-size: 12px;
         }
       }
 
-      .weight-input-wrap {
+      .add-bind-controls {
         display: flex;
-        align-items: center;
+        flex-direction: column;
         gap: 6px;
-        font-size: 12px;
-        font-weight: bold;
-        color: $text-main;
-        flex: 1;
-        min-width: 130px;
-
-        .range-slider {
-          flex: 1;
-        }
-      }
-
-      .test-morph-wrap {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 12px;
-        color: #d97706;
-        font-weight: bold;
         margin-bottom: 8px;
 
-        .test-label {
-          min-width: 105px;
-          flex-shrink: 0;
-          font-size: 11px;
-        }
+        .control-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
 
-        .test-slider {
-          flex: 1;
+          .control-label {
+            font-size: 11px;
+            color: $text-sub;
+            font-weight: bold;
+            min-width: 105px;
+            flex-shrink: 0;
+
+            &.test-label {
+              color: #d97706;
+            }
+          }
+
+          .slider-with-val {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+
+            .range-slider {
+              flex: 1;
+              min-width: 0;
+            }
+
+            .unit {
+              font-size: 11px;
+              color: $text-sub;
+            }
+
+            .test-val {
+              font-size: 11px;
+              color: #d97706;
+              font-weight: bold;
+              min-width: 32px;
+              text-align: right;
+            }
+          }
         }
       }
 
@@ -1145,6 +1209,7 @@ $text-sub: #64748b;
         font-weight: bold;
         font-size: 12px;
         cursor: pointer;
+        box-sizing: border-box;
         &:hover {
           background: #e2e8f0;
         }
