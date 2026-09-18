@@ -139,21 +139,21 @@
         <div v-if="editingClipBinds.length === 0" class="no-binds">
           {{ $t('blendShape.noBinds') }}
         </div>
-        <table class="binds-table" v-if="editingClipBinds.length > 0">
-          <thead>
-            <tr>
-              <th>{{ $t('blendShape.targetMesh') }}</th>
-              <th>{{ $t('blendShape.targetMorph') }}</th>
-              <th>{{ $t('blendShape.bindWeight') }}</th>
-              <th>{{ $t('blendShape.testMorph') }}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(bind, bIndex) in editingClipBinds" :key="bIndex">
-              <td>{{ getMeshName(bind.mesh) }}</td>
-              <td>{{ getMorphTargetName(bind.mesh, bind.index) }}</td>
-              <td class="weight-cell">
+        <div class="binds-list" v-if="editingClipBinds.length > 0">
+          <div v-for="(bind, bIndex) in editingClipBinds" :key="bIndex" class="bind-item-card">
+            <!-- ヘッダー: メッシュとモーフターゲット名、削除ボタン -->
+            <div class="bind-card-header">
+              <div class="bind-names">
+                <span class="mesh-badge">{{ getMeshName(bind.mesh) }}</span>
+                <span class="morph-name">{{ getMorphTargetName(bind.mesh, bind.index) }}</span>
+              </div>
+              <button class="btn-delete-small" @click="removeEditingBind(bIndex)" title="バインド削除">✕</button>
+            </div>
+
+            <!-- コントロール群: 連動ウェイト & モーフテスト動作 -->
+            <div class="bind-card-controls">
+              <div class="control-row weight-row">
+                <span class="control-label">{{ $t('blendShape.bindWeight') }}:</span>
                 <div class="slider-with-val">
                   <input
                     type="range"
@@ -161,7 +161,7 @@
                     max="100"
                     v-model.number="bind.weight"
                     @input="onEditingBindWeightChange"
-                    class="range-slider"
+                    class="range-slider main-range"
                   />
                   <input
                     type="number"
@@ -171,26 +171,28 @@
                     @input="onEditingBindWeightChange"
                     class="number-input-mini"
                   />
-                  <span>%</span>
+                  <span class="unit">%</span>
                 </div>
-              </td>
-              <td>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  v-model.number="bindTestWeights[bIndex]"
-                  @input="onTestMorphInput(bind.mesh, bind.index, bindTestWeights[bIndex])"
-                  class="range-slider test-slider"
-                />
-              </td>
-              <td>
-                <button class="btn-delete-small" @click="removeEditingBind(bIndex)">✕</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </div>
+
+              <div class="control-row test-row">
+                <span class="control-label test-label">🔍 {{ $t('blendShape.testMorph') }}:</span>
+                <div class="slider-with-val">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    v-model.number="bindTestWeights[bIndex]"
+                    @input="onTestMorphInput(bind.mesh, bind.index, bindTestWeights[bIndex])"
+                    class="range-slider test-slider"
+                  />
+                  <span class="test-val">{{ Math.round((bindTestWeights[bIndex] || 0) * 100) }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- 既存クリップへのバインド追加 -->
         <div class="add-bind-box" v-if="morphMeshes && morphMeshes.length > 0">
@@ -981,28 +983,99 @@ $text-sub: #64748b;
       }
     }
 
-    .binds-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
+    .binds-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
       margin-bottom: 8px;
 
-      th {
-        text-align: left;
-        padding: 4px;
-        color: $text-sub;
-        font-size: 11px;
-        border-bottom: 1px solid #cbd5e1;
-      }
+      .bind-item-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 8px 10px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 
-      td {
-        padding: 6px 4px;
-        border-bottom: 1px solid #e2e8f0;
-        vertical-align: middle;
-      }
+        .bind-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 6px;
 
-      .weight-cell {
-        min-width: 120px;
+          .bind-names {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+
+            .mesh-badge {
+              font-size: 11px;
+              padding: 2px 6px;
+              background: #e0f2fe;
+              color: #0369a1;
+              border-radius: 4px;
+              font-weight: bold;
+            }
+
+            .morph-name {
+              font-size: 12px;
+              font-weight: bold;
+              color: $text-main;
+              word-break: break-all;
+            }
+          }
+        }
+
+        .bind-card-controls {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding-top: 4px;
+          border-top: 1px solid #f1f5f9;
+
+          .control-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .control-label {
+              font-size: 11px;
+              color: $text-sub;
+              font-weight: bold;
+              min-width: 105px;
+              flex-shrink: 0;
+
+              &.test-label {
+                color: #d97706;
+              }
+            }
+
+            .slider-with-val {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              flex: 1;
+
+              .range-slider {
+                flex: 1;
+                min-width: 80px;
+              }
+
+              .unit {
+                font-size: 11px;
+                color: $text-sub;
+              }
+
+              .test-val {
+                font-size: 11px;
+                color: #d97706;
+                font-weight: bold;
+                min-width: 32px;
+                text-align: right;
+              }
+            }
+          }
+        }
       }
     }
 
@@ -1020,25 +1093,42 @@ $text-sub: #64748b;
         align-items: center;
         flex-wrap: wrap;
         margin-bottom: 6px;
+
+        .select-box {
+          flex: 1;
+          min-width: 130px;
+        }
       }
 
       .weight-input-wrap {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
         font-size: 12px;
         font-weight: bold;
         color: $text-main;
+        flex: 1;
+        min-width: 130px;
+
+        .range-slider {
+          flex: 1;
+        }
       }
 
       .test-morph-wrap {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
         font-size: 12px;
         color: #d97706;
         font-weight: bold;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
+
+        .test-label {
+          min-width: 105px;
+          flex-shrink: 0;
+          font-size: 11px;
+        }
 
         .test-slider {
           flex: 1;
