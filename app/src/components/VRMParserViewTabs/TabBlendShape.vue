@@ -246,12 +246,12 @@
     <div class="clips-container">
       <div v-for="clip in normalizedClips" :key="clip.id" class="clip-card" :class="{ active: (clipWeights[clip.key] || 0) > 0 }">
         <div class="clip-header">
-          <div class="clip-title-wrap">
+          <div class="clip-title-wrap" @click="selectBlendShape(clip.key)" :title="blendShapeName(clip.key) + ' (クリックで100%に設定)'">
             <span class="clip-name">{{ blendShapeName(clip.key) }}</span>
             <span v-if="clip.isCustom" class="badge-custom">custom</span>
           </div>
           <div class="clip-quick-buttons">
-            <button class="btn-quick" @click="setClipWeight(clip.key, 1.0)">100%</button>
+            <button class="btn-quick" @click="selectBlendShape(clip.key)">100%</button>
             <button class="btn-quick" @click="setClipWeight(clip.key, 0.0)">0%</button>
             <button class="btn-edit-toggle" @click="openEditPanel(clip)">
               ✏️ {{ $t('blendShape.btnEdit') }}
@@ -481,10 +481,28 @@ export default class TabBlendShape extends Vue {
     this.$emit('change-blendshape-weight', { name: key, weight: val })
   }
 
+  // 表情名を選択して100%にする（他は解除）
+  selectBlendShape(key: string) {
+    for (const k of Object.keys(this.clipWeights)) {
+      this.$set(this.clipWeights, k, 0)
+    }
+    this.$set(this.clipWeights, key, 1.0)
+
+    if (this.changeBlendShape) {
+      this.changeBlendShape(key)
+    } else {
+      this.$emit('change-blendshape-weight', { name: key, weight: 1.0 })
+    }
+  }
+
   // ワンタップウェイト設定 (1.0 または 0.0)
   setClipWeight(key: string, val: number) {
-    this.$set(this.clipWeights, key, val)
-    this.$emit('change-blendshape-weight', { name: key, weight: val })
+    if (val === 1.0) {
+      this.selectBlendShape(key)
+    } else {
+      this.$set(this.clipWeights, key, val)
+      this.$emit('change-blendshape-weight', { name: key, weight: val })
+    }
   }
 
   // 全表情リセット
@@ -1176,8 +1194,15 @@ $text-sub: #64748b;
       transition: all 0.2s;
 
       &.active {
-        border-color: #38bdf8;
+        border-color: #0284c7;
         background: #f0f9ff;
+        box-shadow: 0 0 0 1px #0284c7;
+
+        .clip-title-wrap {
+          .clip-name {
+            color: #0284c7;
+          }
+        }
       }
 
       .clip-header {
@@ -1190,11 +1215,24 @@ $text-sub: #64748b;
           display: flex;
           align-items: center;
           gap: 6px;
+          cursor: pointer;
+          user-select: none;
+          padding: 2px 6px;
+          border-radius: 4px;
+          transition: all 0.2s;
+
+          &:hover {
+            background-color: #e0f2fe;
+            .clip-name {
+              color: $primary;
+            }
+          }
 
           .clip-name {
             font-size: 13px;
             font-weight: bold;
             color: $text-main;
+            transition: color 0.2s;
           }
 
           .badge-custom {
