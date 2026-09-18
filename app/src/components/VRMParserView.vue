@@ -20,7 +20,7 @@
     <TabShortVideo :selectTabType="selectTabType" />
     <TabMaterials :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
     <TabMeta :selectTabType="selectTabType" :json="json" />
-    <TabBlendShape :selectTabType="selectTabType" :drawVrm="drawVrm" :blendShapeGroups="blendShapeGroups" :json="json" :vrmVersion="vrmVersion" :changeBlendShape="changeBlendShape" @download-all-blendshapes="onDownloadAllBlendShapes" />
+    <TabBlendShape ref="tabBlendShape" :selectTabType="selectTabType" :drawVrm="drawVrm" :blendShapeGroups="blendShapeGroups" :morphMeshes="morphMeshes" :json="json" :vrmVersion="vrmVersion" :changeBlendShape="changeBlendShape" @download-all-blendshapes="onDownloadAllBlendShapes" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @reload-blendshapes="reloadBlendShapes" />
   </div>
 </template>
 
@@ -73,6 +73,9 @@ export default class VRMParserView extends Vue {
 
   // ブレンドシェイプグループ 
   blendShapeGroups: any = []
+
+  // モーフターゲットを持つメッシュ一覧
+  morphMeshes: any[] = []
 
   // バージョン
   vrmVersion: any = null
@@ -144,6 +147,10 @@ export default class VRMParserView extends Vue {
         this.blendShapeGroups = VRMParser.getBlendShapeGroups()
         console.log('blendShapeGroups', this.blendShapeGroups)
 
+        // モーフターゲットを持つメッシュ一覧取得
+        this.morphMeshes = VRMParser.getMeshesWithMorphTargets()
+        console.log('morphMeshes', this.morphMeshes)
+
         // バージョン
         this.vrmVersion = VRMParser.getVRMVersion()
 
@@ -173,6 +180,31 @@ export default class VRMParserView extends Vue {
 
   onDownloadAllBlendShapes(names: string[]) {
       this.$emit('download-all-blendshapes', names);
+  }
+
+  reloadBlendShapes() {
+    this.blendShapeGroups = VRMParser.getBlendShapeGroups();
+    this.morphMeshes = VRMParser.getMeshesWithMorphTargets();
+  }
+
+  onChangeBlendShapeWeight(payload: { name: string, weight: number }) {
+    this.$emit('change-blendshape-weight', payload);
+  }
+
+  onResetAllBlendShapes() {
+    this.$emit('reset-all-blendshapes');
+  }
+
+  onPreviewMorphTarget(payload: { meshIndex: number, targetIndex: number, weight: number }) {
+    this.$emit('preview-morph-target', payload);
+  }
+
+  onRegisterCustomExpression(payload: { name: string, binds: any[] }) {
+    this.$emit('register-custom-expression', payload);
+  }
+
+  onUnregisterCustomExpression(name: string) {
+    this.$emit('unregister-custom-expression', name);
   }
 
 }

@@ -13,7 +13,7 @@
       </div>
     </div>
     <div class="container vrmparserContainer">
-      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" />
+      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" />
     </div>
 </div>
 </template>
@@ -160,6 +160,41 @@ export default class Main extends Vue {
       if (vrmview.captureBlendShapes) {
           vrmview.captureBlendShapes(names);
       }
+  }
+
+  onChangeBlendShapeWeight(payload: { name: string, weight: number }) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.setBlendShapeWeight) {
+      vrmview.setBlendShapeWeight(payload.name, payload.weight);
+    }
+  }
+
+  onResetAllBlendShapes() {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.resetAllBlendShapes) {
+      vrmview.resetAllBlendShapes();
+    }
+  }
+
+  onPreviewMorphTarget(payload: { meshIndex: number, targetIndex: number, weight: number }) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.previewMorphTarget) {
+      vrmview.previewMorphTarget(payload.meshIndex, payload.targetIndex, payload.weight);
+    }
+  }
+
+  onRegisterCustomExpression(payload: { name: string, binds: any[] }) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.registerCustomExpression) {
+      vrmview.registerCustomExpression(payload.name, payload.binds);
+    }
+  }
+
+  onUnregisterCustomExpression(name: string) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.unregisterCustomExpression) {
+      vrmview.unregisterCustomExpression(name);
+    }
   }
 }
 </script>

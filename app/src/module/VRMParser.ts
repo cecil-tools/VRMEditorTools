@@ -205,8 +205,20 @@ class VRMParser {
             // console.log('bufferViews', VRMParser.json.bufferViews)
             // chunk0 を更新
             VRMParser.chunk0.json = VRMParser.json
-            VRMParser.chunk0.chunkData = new TextEncoder().encode( JSON.stringify(VRMParser.json) )
-            VRMParser.chunk0.chunkLength = VRMParser.chunk0.chunkData.length
+            const jsonText = JSON.stringify(VRMParser.json)
+            const rawBytes = new TextEncoder().encode(jsonText)
+            // glTF 2.0 規格: JSON チャンクは 4 バイト境界にスペース (0x20) でパディング
+            const padding = (4 - (rawBytes.length % 4)) % 4
+            let chunkData: Uint8Array = rawBytes
+            if (padding > 0) {
+                chunkData = new Uint8Array(rawBytes.length + padding)
+                chunkData.set(rawBytes)
+                for (let i = 0; i < padding; i++) {
+                    chunkData[rawBytes.length + i] = 0x20
+                }
+            }
+            VRMParser.chunk0.chunkData = chunkData
+            VRMParser.chunk0.chunkLength = chunkData.length
             console.log('chunk0', VRMParser.chunk0)
 
             // headerの length も更新
@@ -516,16 +528,162 @@ class VRMParser {
         }
     }
     
+    // モーフターゲットを持つメッシュ一覧を取得する
+    public static getMeshesWithMorphTargets = () => {
+        if (!VRMParser.json || !VRMParser.json.meshes) return [];
+        const result: any[] = [];
+        VRMParser.json.meshes.forEach((mesh: any, meshIndex: number) => {
+            const primitives = mesh.primitives || [];
+            let targetCount = 0;
+            for (const prim of primitives) {
+                if (prim.targets && prim.targets.length > 0) {
+                    targetCount = prim.targets.length;
+                    break;
+                }
+            }
+            if (targetCount > 0) {
+                const nodeIndex = VRMParser.json.nodes?.findIndex((node: any) => node.mesh === meshIndex);
+                const targetNames = mesh.extras?.targetNames || primitives[0]?.extras?.targetNames || [];
+                result.push({
+                    meshIndex,
+                    nodeIndex: nodeIndex !== -1 && nodeIndex !== undefined ? nodeIndex : meshIndex,
+                    name: mesh.name || `Mesh_${meshIndex}`,
+                    targetCount,
+                    targetNames
+                });
+            }
+        });
+        return result;
+    }
+
     // ブレンドシェイプグループ を取得する
     public static getBlendShapeGroups = () => {
         const version = VRMParser.getVRMVersion()
         const extVRM = VRMParser.getVRMExtensionJson()
+        if (!extVRM) return version.version == 0 ? [] : {}
         if (version.version == 0) {
-            return extVRM.blendShapeMaster.blendShapeGroups
+            return extVRM.blendShapeMaster?.blendShapeGroups || []
         }
         else {
-            return extVRM.expressions.preset
+            const preset = extVRM.expressions?.preset || {}
+            const custom = extVRM.expressions?.custom || {}
+            return { ...preset, ...custom }
         }
+    }
+
+    // ブレンドシェイプを更新する
+    public static updateBlendShapeGroup = (clipData: any): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            const version = VRMParser.getVRMVersion()
+            const extVRM = VRMParser.getVRMExtensionJson()
+            if (!extVRM) {
+                resolve()
+                return
+            }
+
+            if (version.version == 0) {
+                const groups = extVRM.blendShapeMaster?.blendShapeGroups || []
+                const target = groups.find((g: any) => g.name === clipData.name || g.presetName === clipData.presetName)
+                if (target) {
+                    if (clipData.name !== undefined) target.name = clipData.name
+                    if (clipData.binds !== undefined) target.binds = clipData.binds
+                    if (clipData.isBinary !== undefined) target.isBinary = clipData.isBinary
+                }
+            } else {
+                if (!extVRM.expressions) extVRM.expressions = {}
+                const name = clipData.name || clipData.presetName
+                if (extVRM.expressions.preset && extVRM.expressions.preset[name]) {
+                    const target = extVRM.expressions.preset[name]
+                    if (clipData.morphTargetBinds !== undefined) target.morphTargetBinds = clipData.morphTargetBinds
+                    if (clipData.isBinary !== undefined) target.isBinary = clipData.isBinary
+                } else {
+                    if (!extVRM.expressions.custom) extVRM.expressions.custom = {}
+                    if (!extVRM.expressions.custom[name]) extVRM.expressions.custom[name] = {}
+                    const target = extVRM.expressions.custom[name]
+                    if (clipData.morphTargetBinds !== undefined) target.morphTargetBinds = clipData.morphTargetBinds
+                    if (clipData.isBinary !== undefined) target.isBinary = clipData.isBinary
+                }
+            }
+
+            return VRMParser.chunkRebuilding()
+                .then(() => resolve())
+                .catch(e => reject(e))
+        })
+    }
+
+    // 新規ブレンドシェイプを追加する
+    public static addBlendShapeGroup = (newClipData: any): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            const version = VRMParser.getVRMVersion()
+            const extVRM = VRMParser.getVRMExtensionJson()
+            if (!extVRM) {
+                resolve()
+                return
+            }
+
+            if (version.version == 0) {
+                if (!extVRM.blendShapeMaster) extVRM.blendShapeMaster = { blendShapeGroups: [] }
+                if (!extVRM.blendShapeMaster.blendShapeGroups) extVRM.blendShapeMaster.blendShapeGroups = []
+                extVRM.blendShapeMaster.blendShapeGroups.push({
+                    name: newClipData.name,
+                    presetName: newClipData.presetName || 'unknown',
+                    binds: newClipData.binds || [],
+                    materialValues: [],
+                    isBinary: !!newClipData.isBinary
+                })
+            } else {
+                if (!extVRM.expressions) extVRM.expressions = {}
+                if (newClipData.isPreset && newClipData.presetName) {
+                    if (!extVRM.expressions.preset) extVRM.expressions.preset = {}
+                    extVRM.expressions.preset[newClipData.presetName] = {
+                        morphTargetBinds: newClipData.morphTargetBinds || [],
+                        isBinary: !!newClipData.isBinary
+                    }
+                } else {
+                    if (!extVRM.expressions.custom) extVRM.expressions.custom = {}
+                    extVRM.expressions.custom[newClipData.name] = {
+                        morphTargetBinds: newClipData.morphTargetBinds || [],
+                        isBinary: !!newClipData.isBinary
+                    }
+                }
+            }
+
+            return VRMParser.chunkRebuilding()
+                .then(() => resolve())
+                .catch(e => reject(e))
+        })
+    }
+
+    // ブレンドシェイプを削除する
+    public static deleteBlendShapeGroup = (name: string): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            const version = VRMParser.getVRMVersion()
+            const extVRM = VRMParser.getVRMExtensionJson()
+            if (!extVRM) {
+                resolve()
+                return
+            }
+
+            if (version.version == 0) {
+                const groups = extVRM.blendShapeMaster?.blendShapeGroups
+                if (groups) {
+                    const idx = groups.findIndex((g: any) => g.name === name || g.presetName === name)
+                    if (idx !== -1) {
+                        groups.splice(idx, 1)
+                    }
+                }
+            } else {
+                if (extVRM.expressions?.custom && extVRM.expressions.custom[name]) {
+                    delete extVRM.expressions.custom[name]
+                } else if (extVRM.expressions?.preset && extVRM.expressions.preset[name]) {
+                    delete extVRM.expressions.preset[name]
+                }
+            }
+
+            return VRMParser.chunkRebuilding()
+                .then(() => resolve())
+                .catch(e => reject(e))
+        })
     }
 }
 

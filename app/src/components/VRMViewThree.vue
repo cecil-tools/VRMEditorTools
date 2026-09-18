@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
-import { VRMLoaderPlugin } from '@pixiv/three-vrm';
+import { VRMLoaderPlugin, VRMExpression, VRMExpressionMorphTargetBind } from '@pixiv/three-vrm';
 import JSZip from 'jszip';
 
 import VRMParser from '@/module/VRMParser'
@@ -375,11 +375,12 @@ export default class VRMViewThree extends Vue {
     o: 'oh',
     blink: 'blink',
     angry: 'angry',
-    fun: 'happy',
+    fun: 'relaxed',
     happy: 'happy',
-    joy: 'relaxed',
+    joy: 'happy',
     relaxed: 'relaxed',    
-    sorrow: 'sorrow',
+    sorrow: 'sad',
+    sad: 'sad',
     surprised: 'surprised',
     lookup: 'lookUp',
     lookdown: 'lookDown',
@@ -389,24 +390,157 @@ export default class VRMViewThree extends Vue {
     blinkright: 'blinkRight',
     blink_l: 'blinkLeft',
     blink_r: 'blinkRight',    
+    neutral: 'neutral',
   }
 
-  // 表情変更
-  changeBlendShape = (name: string) => {
-    // console.log('changeBlendShape', name, this.gltf.userData.vrm)
+  // 表情名（VRM 0.x presetName または VRM 1.0 expressionName）を解決
+  getExpressionName = (name: string): string => {
+    if (!this.gltf || !this.gltf.userData.vrm) return name;
     const vrm = this.gltf.userData.vrm;
+    if (vrm.expressionManager) {
+      if (vrm.expressionManager.getExpression(name)) {
+        return name;
+      }
+      const key = name.toLowerCase();
+      if (this.BLEND_SHAPE_GROUPS[key] && vrm.expressionManager.getExpression(this.BLEND_SHAPE_GROUPS[key])) {
+        return this.BLEND_SHAPE_GROUPS[key];
+      }
+    }
+    return name;
+  }
+
+  // 表情変更（単一表情を100%にし他を0%にする）
+  changeBlendShape = (name: string) => {
+    if (!this.gltf || !this.gltf.userData.vrm) return;
+    const vrm = this.gltf.userData.vrm;
+    if (!vrm.expressionManager) return;
     
     // 表情 リセット
     for (const expression of vrm.expressionManager.expressions) {
-      // console.log(' expression: ', expression.expressionName);
       vrm.expressionManager.setValue(expression.expressionName, 0.0);
     }
 
-  // 表情変更
-    const key = name.toLocaleLowerCase()
-    vrm.expressionManager.setValue(this.BLEND_SHAPE_GROUPS[key], 1.0);
+    // 表情変更
+    const expName = this.getExpressionName(name);
+    vrm.expressionManager.setValue(expName, 1.0);
     vrm.expressionManager.update();
     this.render();
+  }
+
+  // 単一表情のウェイトを設定（リアルタイムスライダー用）
+  setBlendShapeWeight = (name: string, weight: number) => {
+    if (!this.gltf || !this.gltf.userData.vrm) return;
+    const vrm = this.gltf.userData.vrm;
+    if (!vrm.expressionManager) return;
+
+    const expName = this.getExpressionName(name);
+    vrm.expressionManager.setValue(expName, Math.max(0, Math.min(1, weight)));
+    vrm.expressionManager.update();
+    this.render();
+  }
+
+  // 全ての表情をリセット
+  resetAllBlendShapes = () => {
+    if (!this.gltf || !this.gltf.userData.vrm) return;
+    const vrm = this.gltf.userData.vrm;
+    if (!vrm.expressionManager) return;
+
+    for (const expression of vrm.expressionManager.expressions) {
+      vrm.expressionManager.setValue(expression.expressionName, 0.0);
+    }
+    vrm.expressionManager.update();
+    this.render();
+  }
+
+  // モーフターゲット直接プレビュー（バインド設定時の動作テスト用）
+  previewMorphTarget = async (meshIndex: number, targetIndex: number, weight: number) => {
+    if (!this.gltf) return;
+    try {
+      if (this.gltf.parser && this.gltf.parser.getDependency) {
+        const meshObj = await this.gltf.parser.getDependency('mesh', meshIndex);
+        if (meshObj) {
+          if (meshObj.isMesh && meshObj.morphTargetInfluences) {
+            meshObj.morphTargetInfluences[targetIndex] = weight;
+          } else {
+            meshObj.traverse((child: any) => {
+              if (child.isMesh && child.morphTargetInfluences) {
+                child.morphTargetInfluences[targetIndex] = weight;
+              }
+            });
+          }
+          this.render();
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('getDependency mesh failed, falling back to traverse', e);
+    }
+
+    this.gltf.scene?.traverse((child: any) => {
+      if (child.isMesh && child.morphTargetInfluences) {
+        const assoc = this.gltf.parser?.associations?.get(child);
+        if (assoc && (assoc.mesh === meshIndex || assoc.meshes === meshIndex)) {
+          child.morphTargetInfluences[targetIndex] = weight;
+        }
+      }
+    });
+    this.render();
+  }
+
+  // 動的エクスプレッションの登録（新規追加したブレンドシェイプを即時プレビュー）
+  registerCustomExpression = async (name: string, binds: any[]) => {
+    if (!this.gltf || !this.gltf.userData.vrm) return;
+    const vrm = this.gltf.userData.vrm;
+    if (!vrm.expressionManager) return;
+
+    let expr = vrm.expressionManager.getExpression(name);
+    if (expr) {
+      vrm.expressionManager.unregisterExpression(expr);
+      this.scene.remove(expr);
+    }
+
+    expr = new VRMExpression(name);
+    this.scene.add(expr);
+
+    for (const bind of binds) {
+      const meshIndex = bind.mesh !== undefined ? bind.mesh : (bind.node !== undefined ? bind.node : 0);
+      const targetIndex = bind.index !== undefined ? bind.index : 0;
+      const bindWeight = (bind.weight !== undefined ? bind.weight : 100) * (bind.weight > 1.0 ? 0.01 : 1.0);
+
+      const primitives: any[] = [];
+      if (this.gltf.parser && this.gltf.parser.getDependency) {
+        try {
+          const meshObj = await this.gltf.parser.getDependency('mesh', meshIndex);
+          if (meshObj) {
+            if (meshObj.isMesh) primitives.push(meshObj);
+            else meshObj.traverse((c: any) => { if (c.isMesh) primitives.push(c); });
+          }
+        } catch (e) {
+          console.warn('Error finding meshObj for bind', e);
+        }
+      }
+      if (primitives.length > 0) {
+        expr.addBind(new VRMExpressionMorphTargetBind({
+          primitives,
+          index: targetIndex,
+          weight: bindWeight
+        }));
+      }
+    }
+
+    vrm.expressionManager.registerExpression(expr);
+  }
+
+  // 動的エクスプレッションの解除
+  unregisterCustomExpression = (name: string) => {
+    if (!this.gltf || !this.gltf.userData.vrm) return;
+    const vrm = this.gltf.userData.vrm;
+    if (!vrm.expressionManager) return;
+    const expr = vrm.expressionManager.getExpression(name);
+    if (expr) {
+      vrm.expressionManager.unregisterExpression(expr);
+      this.scene.remove(expr);
+    }
   } 
 
   // 3面図撮影
