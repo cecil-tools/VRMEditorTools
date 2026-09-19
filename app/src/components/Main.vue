@@ -2,7 +2,7 @@
   <div class="main">
     <div class="container vrmviewContainer">
       <FileUpload :changeFile="changeFile" />
-      <VRMView ref="vrmview" :path="path" :debug="false" @change-first-person-offset="onChangeFirstPersonFromGizmo" />
+      <VRMView ref="vrmview" :path="path" :debug="false" @change-first-person-offset="onChangeFirstPersonFromGizmo" @change-accessory-transform-from-gizmo="onChangeAccessoryTransformFromGizmo" />
       <div>
         <label for="btnExport">{{$t('btnExport')}}</label>
         <input id="btnExport" type="button" @click="clickExport" />
@@ -13,7 +13,7 @@
       </div>
     </div>
     <div class="container vrmparserContainer">
-      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" @preview-material-outline-width="onPreviewMaterialOutlineWidth" @preview-material-outline-mode="onPreviewMaterialOutlineMode" />
+      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" @preview-material-outline-width="onPreviewMaterialOutlineWidth" @preview-material-outline-mode="onPreviewMaterialOutlineMode" @load-accessory="onLoadAccessory" @select-accessory="onSelectAccessory" @toggle-accessory-visibility="onToggleAccessoryVisibility" @remove-accessory="onRemoveAccessory" @focus-accessory="onFocusAccessory" @change-accessory-bone="onChangeAccessoryBone" @change-accessory-mode="onChangeAccessoryMode" @change-accessory-transform="onChangeAccessoryTransform" @activate-accessory-mode="onActivateAccessoryMode" @merge-accessories-to-vrm="onMergeAccessoriesToVRM" />
     </div>
 </div>
 </template>
@@ -23,8 +23,8 @@ import { Component, Vue } from 'vue-property-decorator'
 
 import FileUpload from '@/components/FileUpload.vue'
 import VRMParserView from '@/components/VRMParserView.vue'
-
 import VRMView from '@/components/VRMViewThree.vue'
+import VRMParser from '@/module/VRMParser'
 
 @Component({
   components: {
@@ -110,6 +110,9 @@ export default class Main extends Vue {
   onSelectTab(type: string) {
     const vrmview = this.$refs.vrmview as any
     const vrmparser = this.$refs.vrmparser as any
+    if (vrmview.hideAccessoryGizmo && type !== 'tab_accessory') {
+      vrmview.hideAccessoryGizmo();
+    }
     if (type === 'tab_blendshape') {
       if (vrmview.hideFirstPersonGizmo) {
         vrmview.hideFirstPersonGizmo();
@@ -133,6 +136,16 @@ export default class Main extends Vue {
       }
       if (vrmview.showFirstPersonGizmo && vrmparser) {
         vrmview.showFirstPersonGizmo(vrmparser.firstPerson, vrmparser.vrmVersion);
+      }
+    } else if (type === 'tab_accessory') {
+      if (vrmview.hideFirstPersonGizmo) {
+        vrmview.hideFirstPersonGizmo();
+      }
+      if (vrmview.hideArmatureSkeleton) {
+        vrmview.hideArmatureSkeleton();
+      }
+      if (vrmview.showAccessoryGizmo) {
+        vrmview.showAccessoryGizmo();
       }
     } else {
       if (vrmview.hideFirstPersonGizmo) {
@@ -252,6 +265,86 @@ export default class Main extends Vue {
     const vrmview = this.$refs.vrmview as any;
     if (vrmview && vrmview.setMaterialOutlineMode) {
       vrmview.setMaterialOutlineMode(payload.materialName, payload.mode, payload.materialIndex);
+    }
+  }
+
+  // アクセサリイベントハンドラ
+  onChangeAccessoryTransformFromGizmo(payload: any) {
+    const vrmparser = this.$refs.vrmparser as any;
+    if (vrmparser && vrmparser.updateAccessoryTransformFromGizmo) {
+      vrmparser.updateAccessoryTransformFromGizmo(payload);
+    }
+  }
+
+  onLoadAccessory(payload: any) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.loadAccessory) {
+      vrmview.loadAccessory(payload);
+    }
+  }
+
+  onSelectAccessory(id: string) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.selectAccessory) {
+      vrmview.selectAccessory(id);
+    }
+  }
+
+  onToggleAccessoryVisibility(payload: any) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.toggleAccessoryVisibility) {
+      vrmview.toggleAccessoryVisibility(payload);
+    }
+  }
+
+  onRemoveAccessory(id: string) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.removeAccessory) {
+      vrmview.removeAccessory(id);
+    }
+  }
+
+  onFocusAccessory(id: string) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.focusAccessory) {
+      vrmview.focusAccessory(id);
+    }
+  }
+
+  onChangeAccessoryBone(payload: any) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.changeAccessoryBone) {
+      vrmview.changeAccessoryBone(payload);
+    }
+  }
+
+  onChangeAccessoryMode(mode: string) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.setAccessoryTransformMode) {
+      vrmview.setAccessoryTransformMode(mode);
+    }
+  }
+
+  onChangeAccessoryTransform(payload: any) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.setAccessoryTransform) {
+      vrmview.setAccessoryTransform(payload);
+    }
+  }
+
+  onActivateAccessoryMode(payload: any) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview) {
+      if (vrmview.showAccessoryGizmo) vrmview.showAccessoryGizmo();
+      if (vrmview.setAccessoryTransformMode) vrmview.setAccessoryTransformMode(payload.mode);
+    }
+  }
+
+  async onMergeAccessoriesToVRM(accessories: any[]) {
+    try {
+      await VRMParser.mergeAccessories(accessories);
+    } catch (e) {
+      console.error('Failed to merge accessories to VRM', e);
     }
   }
 }

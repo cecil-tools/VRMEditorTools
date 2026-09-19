@@ -414,17 +414,259 @@ class VRMParser {
         link.click()
     }
     
-    // TODO 頭にアクセサリを追加してみる
-    public static addHeadAccessory = (): Promise<void> => {
-        console.log('addAccessory')
-        return new Promise((resolve, reject) => {
-            // json を 編集する
-            // meshes に Accessory meshe 情報を追加
-            // nodes に Accessory meshe を追加 
-            // nodes -> Head の children に Accessory meshe の インデックス追加
-            
-            resolve()
-        })      
+    // オイラー角（度数法、XYZ順）からクォータニオン [x, y, z, w] への変換
+    private static eulerDegreesToQuat = (degX: number, degY: number, degZ: number): [number, number, number, number] => {
+        const radX = (degX || 0) * (Math.PI / 180);
+        const radY = (degY || 0) * (Math.PI / 180);
+        const radZ = (degZ || 0) * (Math.PI / 180);
+        const c1 = Math.cos(radX / 2);
+        const c2 = Math.cos(radY / 2);
+        const c3 = Math.cos(radZ / 2);
+        const s1 = Math.sin(radX / 2);
+        const s2 = Math.sin(radY / 2);
+        const s3 = Math.sin(radZ / 2);
+
+        const qx = s1 * c2 * c3 + c1 * s2 * s3;
+        const qy = c1 * s2 * c3 - s1 * c2 * s3;
+        const qz = c1 * c2 * s3 + s1 * s2 * c3;
+        const qw = c1 * c2 * c3 - s1 * s2 * s3;
+        return [qx, qy, qz, qw];
+    }
+
+    // GLBアクセサリをVRMバイナリ/JSONにマージしてボーン配下に配置
+    public static mergeAccessories = async (accessories: any[]): Promise<void> => {
+        if (!accessories || accessories.length === 0) return;
+        if (!VRMParser.json || !VRMParser.chunk1) {
+            throw new Error('VRM is not loaded');
+        }
+
+        for (const accItem of accessories) {
+            if (!accItem.glbData) continue;
+
+            const src = new DataView(accItem.glbData);
+            const header = VRMParser.parseHeader(src);
+            if (header.magic !== VRMParser.HEADER_MAGIC) {
+                console.warn('Accessory file is not valid GLB, skipping', accItem.name);
+                continue;
+            }
+
+            const glbChunk0 = VRMParser.parseChunk0(src, VRMParser.CHUNK_HEADER_SIZE);
+            if (!glbChunk0 || !glbChunk0.json) continue;
+            const glbJson = glbChunk0.json;
+
+            const glbChunk1Offset = VRMParser.CHUNK_HEADER_SIZE
+                + VRMParser.CHUNK_LENGTH_SIZE
+                + VRMParser.CHUNK_TYPE_SIZE
+                + glbChunk0.chunkLength;
+            const glbChunk1 = VRMParser.parseChunk1(src, glbChunk1Offset);
+            if (!glbChunk1 || !glbChunk1.chunkData) continue;
+
+            // 1. バッファの結合 (4バイト境界アライメント)
+            const baseOffset = VRMParser.chunk1.chunkLength;
+            const pad = (4 - (baseOffset % 4)) % 4;
+            const paddedBaseOffset = baseOffset + pad;
+
+            const newChunkData = new Uint8Array(paddedBaseOffset + glbChunk1.chunkLength);
+            newChunkData.set(VRMParser.chunk1.chunkData, 0);
+            newChunkData.set(glbChunk1.chunkData, paddedBaseOffset);
+
+            VRMParser.chunk1.chunkData = newChunkData;
+            VRMParser.chunk1.chunkLength = newChunkData.length;
+
+            // 2. 配列の初期化とオフセット計算
+            VRMParser.json.bufferViews = VRMParser.json.bufferViews || [];
+            VRMParser.json.accessors = VRMParser.json.accessors || [];
+            VRMParser.json.images = VRMParser.json.images || [];
+            VRMParser.json.samplers = VRMParser.json.samplers || [];
+            VRMParser.json.textures = VRMParser.json.textures || [];
+            VRMParser.json.materials = VRMParser.json.materials || [];
+            VRMParser.json.meshes = VRMParser.json.meshes || [];
+            VRMParser.json.nodes = VRMParser.json.nodes || [];
+
+            const bvOffset = VRMParser.json.bufferViews.length;
+            const accOffset = VRMParser.json.accessors.length;
+            const imgOffset = VRMParser.json.images.length;
+            const samplerOffset = VRMParser.json.samplers.length;
+            const texOffset = VRMParser.json.textures.length;
+            const matOffset = VRMParser.json.materials.length;
+            const meshOffset = VRMParser.json.meshes.length;
+            const nodeOffset = VRMParser.json.nodes.length;
+
+            // bufferViews
+            if (glbJson.bufferViews) {
+                for (const bv of glbJson.bufferViews) {
+                    const newBv = { ...bv };
+                    newBv.buffer = 0;
+                    newBv.byteOffset = (bv.byteOffset || 0) + paddedBaseOffset;
+                    VRMParser.json.bufferViews.push(newBv);
+                }
+            }
+
+            // accessors
+            if (glbJson.accessors) {
+                for (const acc of glbJson.accessors) {
+                    const newAcc = { ...acc };
+                    if (newAcc.bufferView !== undefined) {
+                        newAcc.bufferView += bvOffset;
+                    }
+                    VRMParser.json.accessors.push(newAcc);
+                }
+            }
+
+            // images
+            if (glbJson.images) {
+                for (const img of glbJson.images) {
+                    const newImg = { ...img };
+                    if (newImg.bufferView !== undefined) {
+                        newImg.bufferView += bvOffset;
+                    }
+                    VRMParser.json.images.push(newImg);
+                }
+            }
+
+            // samplers
+            if (glbJson.samplers) {
+                for (const s of glbJson.samplers) {
+                    VRMParser.json.samplers.push({ ...s });
+                }
+            }
+
+            // textures
+            if (glbJson.textures) {
+                for (const tex of glbJson.textures) {
+                    const newTex = { ...tex };
+                    if (newTex.source !== undefined) {
+                        newTex.source += imgOffset;
+                    }
+                    if (newTex.sampler !== undefined) {
+                        newTex.sampler += samplerOffset;
+                    }
+                    VRMParser.json.textures.push(newTex);
+                }
+            }
+
+            // materials
+            if (glbJson.materials) {
+                for (const mat of glbJson.materials) {
+                    const newMat = JSON.parse(JSON.stringify(mat));
+                    if (newMat.pbrMetallicRoughness) {
+                        if (newMat.pbrMetallicRoughness.baseColorTexture?.index !== undefined) {
+                            newMat.pbrMetallicRoughness.baseColorTexture.index += texOffset;
+                        }
+                        if (newMat.pbrMetallicRoughness.metallicRoughnessTexture?.index !== undefined) {
+                            newMat.pbrMetallicRoughness.metallicRoughnessTexture.index += texOffset;
+                        }
+                    }
+                    if (newMat.normalTexture?.index !== undefined) {
+                        newMat.normalTexture.index += texOffset;
+                    }
+                    if (newMat.occlusionTexture?.index !== undefined) {
+                        newMat.occlusionTexture.index += texOffset;
+                    }
+                    if (newMat.emissiveTexture?.index !== undefined) {
+                        newMat.emissiveTexture.index += texOffset;
+                    }
+                    VRMParser.json.materials.push(newMat);
+                }
+            }
+
+            // meshes
+            if (glbJson.meshes) {
+                for (const mesh of glbJson.meshes) {
+                    const newMesh = JSON.parse(JSON.stringify(mesh));
+                    if (newMesh.primitives) {
+                        for (const prim of newMesh.primitives) {
+                            if (prim.indices !== undefined) {
+                                prim.indices += accOffset;
+                            }
+                            if (prim.attributes) {
+                                for (const sem of Object.keys(prim.attributes)) {
+                                    prim.attributes[sem] += accOffset;
+                                }
+                            }
+                            if (prim.material !== undefined) {
+                                prim.material += matOffset;
+                            }
+                        }
+                    }
+                    VRMParser.json.meshes.push(newMesh);
+                }
+            }
+
+            // nodes
+            if (glbJson.nodes) {
+                for (const node of glbJson.nodes) {
+                    const newNode = JSON.parse(JSON.stringify(node));
+                    if (newNode.mesh !== undefined) {
+                        newNode.mesh += meshOffset;
+                    }
+                    if (newNode.children && Array.isArray(newNode.children)) {
+                        newNode.children = newNode.children.map((c: number) => c + nodeOffset);
+                    }
+                    VRMParser.json.nodes.push(newNode);
+                }
+            }
+
+            // 3. ルートノードの特定と配置先ボーンへの親子付け
+            const rootIndices: number[] = [];
+            if (glbJson.scenes && glbJson.scenes[glbJson.scene || 0]?.nodes) {
+                rootIndices.push(...glbJson.scenes[glbJson.scene || 0].nodes);
+            } else if (glbJson.nodes) {
+                const childSet = new Set<number>();
+                glbJson.nodes.forEach((n: any) => {
+                    if (n.children) n.children.forEach((c: number) => childSet.add(c));
+                });
+                glbJson.nodes.forEach((_: any, idx: number) => {
+                    if (!childSet.has(idx)) rootIndices.push(idx);
+                });
+            }
+
+            for (const rIdx of rootIndices) {
+                const mergedRootNodeIdx = rIdx + nodeOffset;
+                const mergedRootNode = VRMParser.json.nodes[mergedRootNodeIdx];
+                if (mergedRootNode) {
+                    mergedRootNode.name = `Accessory_${accItem.name || 'item'}`;
+                    mergedRootNode.translation = [
+                        accItem.position.x || 0,
+                        accItem.position.y || 0,
+                        accItem.position.z || 0
+                    ];
+                    mergedRootNode.rotation = VRMParser.eulerDegreesToQuat(
+                        accItem.rotation.x || 0,
+                        accItem.rotation.y || 0,
+                        accItem.rotation.z || 0
+                    );
+                    mergedRootNode.scale = [
+                        accItem.scale.x ?? 1,
+                        accItem.scale.y ?? 1,
+                        accItem.scale.z ?? 1
+                    ];
+
+                    // 配置先ボーンノードの子に追加
+                    let targetBoneNode: any = null;
+                    if (accItem.targetNodeIndex !== undefined && VRMParser.json.nodes[accItem.targetNodeIndex]) {
+                        targetBoneNode = VRMParser.json.nodes[accItem.targetNodeIndex];
+                    } else if (accItem.targetBoneName) {
+                        targetBoneNode = VRMParser.json.nodes.find((n: any) =>
+                            n.name && n.name.toLowerCase() === accItem.targetBoneName.toLowerCase()
+                        );
+                    }
+
+                    if (targetBoneNode) {
+                        targetBoneNode.children = targetBoneNode.children || [];
+                        if (!targetBoneNode.children.includes(mergedRootNodeIdx)) {
+                            targetBoneNode.children.push(mergedRootNodeIdx);
+                        }
+                    } else if (VRMParser.json.nodes[0]) {
+                        VRMParser.json.nodes[0].children = VRMParser.json.nodes[0].children || [];
+                        VRMParser.json.nodes[0].children.push(mergedRootNodeIdx);
+                    }
+                }
+            }
+        }
+
+        // 4. VRMの再構築
+        await VRMParser.chunkRebuilding();
     }
 
     // スプリングボーン グループ を取得する

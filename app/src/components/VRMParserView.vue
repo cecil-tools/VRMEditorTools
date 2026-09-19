@@ -10,6 +10,7 @@
         <li :class="{ active: selectTabType === 'tab_vroid' }" @click="clickSelectTab('tab_vroid')">{{$t('tabVroid')}}</li>
         <li :class="{ active: selectTabType === 'tab_blendshape' }" @click="clickSelectTab('tab_blendshape')">{{$t('tabBlendShape')}}</li>
         <li :class="{ active: selectTabType === 'tab_armature' }" @click="clickSelectTab('tab_armature')">{{$t('tabArmature')}}</li>
+        <li :class="{ active: selectTabType === 'tab_accessory' }" @click="clickSelectTab('tab_accessory')">{{$t('tabAccessory')}}</li>
         <!--
         <li @click="clickSelectTab('tab_short_video')">{{$t('tabShortVideo')}}</li>
         -->
@@ -23,6 +24,7 @@
     <TabMeta :selectTabType="selectTabType" :json="json" />
     <TabBlendShape ref="tabBlendShape" :selectTabType="selectTabType" :drawVrm="drawVrm" :blendShapeGroups="blendShapeGroups" :morphMeshes="morphMeshes" :json="json" :vrmVersion="vrmVersion" :changeBlendShape="changeBlendShape" @download-all-blendshapes="onDownloadAllBlendShapes" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @reload-blendshapes="reloadBlendShapes" />
     <TabArmature :selectTabType="selectTabType" :json="json" :vrmVersion="vrmVersion" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" />
+    <TabAccessory ref="tabAccessory" :selectTabType="selectTabType" :json="json" :vrmVersion="vrmVersion" @load-accessory="onLoadAccessory" @select-accessory="onSelectAccessory" @toggle-accessory-visibility="onToggleAccessoryVisibility" @remove-accessory="onRemoveAccessory" @focus-accessory="onFocusAccessory" @change-accessory-bone="onChangeAccessoryBone" @change-accessory-mode="onChangeAccessoryMode" @change-accessory-transform="onChangeAccessoryTransform" @activate-accessory-mode="onActivateAccessoryMode" @merge-accessories-to-vrm="onMergeAccessoriesToVRM" />
   </div>
 </template>
 
@@ -38,6 +40,7 @@ import TabMaterials from '@/components/VRMParserViewTabs/TabMaterials.vue'
 import TabMeta from '@/components/VRMParserViewTabs/TabMeta.vue'
 import TabBlendShape from './VRMParserViewTabs/TabBlendShape.vue'
 import TabArmature from '@/components/VRMParserViewTabs/TabArmature.vue'
+import TabAccessory from '@/components/VRMParserViewTabs/TabAccessory.vue'
 
 @Component({
   components: {
@@ -48,7 +51,8 @@ import TabArmature from '@/components/VRMParserViewTabs/TabArmature.vue'
     TabMaterials,
     TabMeta,
     TabBlendShape,
-    TabArmature
+    TabArmature,
+    TabAccessory
   }
 })
 export default class VRMParserView extends Vue {
@@ -235,6 +239,52 @@ export default class VRMParserView extends Vue {
     this.$emit('preview-material-outline-mode', payload);
   }
 
+  onLoadAccessory(payload: any) {
+    this.$emit('load-accessory', payload);
+  }
+
+  onSelectAccessory(id: string) {
+    this.$emit('select-accessory', id);
+  }
+
+  onToggleAccessoryVisibility(payload: any) {
+    this.$emit('toggle-accessory-visibility', payload);
+  }
+
+  onRemoveAccessory(id: string) {
+    this.$emit('remove-accessory', id);
+  }
+
+  onFocusAccessory(id: string) {
+    this.$emit('focus-accessory', id);
+  }
+
+  onChangeAccessoryBone(payload: any) {
+    this.$emit('change-accessory-bone', payload);
+  }
+
+  onChangeAccessoryMode(mode: string) {
+    this.$emit('change-accessory-mode', mode);
+  }
+
+  onChangeAccessoryTransform(payload: any) {
+    this.$emit('change-accessory-transform', payload);
+  }
+
+  onActivateAccessoryMode(payload: any) {
+    this.$emit('activate-accessory-mode', payload);
+  }
+
+  onMergeAccessoriesToVRM(accessories: any[]) {
+    this.$emit('merge-accessories-to-vrm', accessories);
+  }
+
+  updateAccessoryTransformFromGizmo(payload: any) {
+    const tab = this.$refs.tabAccessory as any;
+    if (tab && tab.updateTransformFromGizmo) {
+      tab.updateTransformFromGizmo(payload);
+    }
+  }
 }
 </script>
 

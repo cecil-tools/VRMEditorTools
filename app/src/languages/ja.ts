@@ -24,6 +24,7 @@ export default {
     tabMeta: 'モデル情報',
     tabBlendShape: 'ブレンドシェイプ',
     tabArmature: 'アーマチュア',
+    tabAccessory: 'アクセサリ追加',
     updateMeta: '更新',
 
     // モデル情報
@@ -187,5 +188,40 @@ export default {
         selectModalTitle: 'アウトラインテクスチャを選択',
         selectPrompt: 'モデル内のテクスチャからアウトライン用を選択してください',
         confirmRemove: 'このマテリアルのアウトラインテクスチャを削除してもよろしいですか？',
+    },
+
+    // アクセサリ追加
+    accessory: {
+        title: 'アクセサリ追加 / 配置',
+        uploadTitle: 'GLB / GLTF ファイルを選択',
+        uploadDesc: 'ドラッグ＆ドロップ または クリックしてファイルを選択',
+        targetBone: '配置先アーマチュア (ボーン)',
+        quickBones: 'よく使うボーン',
+        head: '頭 (Head)',
+        neck: '首 (Neck)',
+        chest: '胸 (Chest)',
+        rightHand: '右手 (Right Hand)',
+        leftHand: '左手 (Left Hand)',
+        hips: '腰 (Hips)',
+        selectBonePlaceholder: 'ボーンを選択してください',
+        searchBone: 'ボーンを検索...',
+        transformMode: '操作モード',
+        modeTranslate: '移動 (W)',
+        modeRotate: '回転 (E)',
+        modeScale: 'サイズ (R)',
+        position: '位置',
+        rotation: '回転 (度)',
+        scale: 'サイズ (拡大縮小)',
+        lockScale: '等倍固定',
+        resetTransform: 'Transformリセット',
+        attachedList: '追加済みアクセサリ',
+        noAccessories: 'アクセサリはまだ追加されていません',
+        remove: '削除',
+        visible: '表示/非表示',
+        focus: 'アクセサリにフォーカス',
+        mergeToVRM: 'VRMに結合',
+        mergedSuccess: 'VRMに結合しました。「VRMファイルをダウンロード」で保存できます。',
+        mergedWarning: '※結合後はVRMダウンロード時にアクセサリが含まれます',
+        confirmRemove: 'このアクセサリを削除しますか？',
     }
 }
