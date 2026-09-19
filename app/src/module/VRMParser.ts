@@ -176,7 +176,7 @@ class VRMParser {
                 return
             }
             json.images
-                .forEach((v: any) => {                
+                .forEach((v: any, imgIdx: number) => {                
                 const bufferView = json.bufferViews[v.bufferView]
                 // new Uint8Array はうまく動作しない
                 // const buf = new Uint8Array(chunkData, bufferView.byteOffset, bufferView.byteLength)
@@ -185,6 +185,7 @@ class VRMParser {
 
                 const img = URL.createObjectURL(blob)
                 images.push({
+                    imageIndex: imgIdx,
                     index: v.bufferView,
                     name: v.name,
                     mimeType: v.mimeType,
@@ -988,6 +989,364 @@ class VRMParser {
             parentMap,
             childrenMap
         }
+    }
+
+    // 最小1x1 PNG画像バイナリ（67バイト）
+    private static PLACEHOLDER_1X1_PNG = new Uint8Array([
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+        0x89, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x44, 0x41,
+        0x54, 0x78, 0x9C, 0x63, 0xF8, 0xCF, 0x50, 0x0F,
+        0x00, 0x03, 0x86, 0x01, 0x82, 0x5A, 0x3D, 0x6B,
+        0x6B, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
+        0x44, 0xAE, 0x42, 0x60, 0x82
+    ])
+
+    // 指定画像を参照しているマテリアル一覧インデックスを取得
+    public static getMaterialsUsingImage = (img: any): number[] => {
+        if (!VRMParser.json || !VRMParser.json.materials) return []
+        const json = VRMParser.json
+
+        // 画像のインデックスを特定
+        let targetImgIdx = -1
+        if (typeof img.imageIndex === 'number' && json.images[img.imageIndex]) {
+            targetImgIdx = img.imageIndex
+        } else {
+            targetImgIdx = json.images.findIndex((v: any) => v.name === img.name || v.bufferView === img.index)
+        }
+        if (targetImgIdx === -1) return []
+
+        // targetImgIdx を参照している textures のインデックス一覧
+        const textureIndices = new Set<number>()
+        if (json.textures) {
+            json.textures.forEach((tex: any, tIdx: number) => {
+                if (tex.source === targetImgIdx) {
+                    textureIndices.add(tIdx)
+                }
+            })
+        }
+
+        // textureIndices を参照している materials のインデックス一覧
+        const materialIndices: number[] = []
+        json.materials.forEach((mat: any, mIdx: number) => {
+            const baseTex = mat.pbrMetallicRoughness?.baseColorTexture?.index
+            if (typeof baseTex === 'number' && textureIndices.has(baseTex)) {
+                materialIndices.push(mIdx)
+                return
+            }
+
+            // VRM 0.x materialProperties チェック (主テクスチャ _MainTex のみを優先判定)
+            const extVRM = VRMParser.getVRMExtensionJson()
+            if (extVRM?.materialProperties && extVRM.materialProperties[mIdx]) {
+                const texProps = extVRM.materialProperties[mIdx].textureProperties || {}
+                if (texProps._MainTex !== undefined && textureIndices.has(texProps._MainTex)) {
+                    materialIndices.push(mIdx)
+                    return
+                }
+            }
+        })
+
+        return materialIndices
+    }
+
+    // 指定画像が使用されているメッシュのUV座標範囲（min/max）および[0,1]はみ出しをチェック
+    public static checkUVBoundsForImage = (img: any): { minU: number; maxU: number; minV: number; maxV: number; hasOverflow: boolean } => {
+        const defaultResult = { minU: 0, maxU: 1, minV: 0, maxV: 1, hasOverflow: false }
+        if (!VRMParser.json || !VRMParser.chunk1) return defaultResult
+
+        const materialIndices = new Set(VRMParser.getMaterialsUsingImage(img))
+        if (materialIndices.size === 0) return defaultResult
+
+        let minU = Infinity, maxU = -Infinity
+        let minV = Infinity, maxV = -Infinity
+        let foundUV = false
+
+        if (VRMParser.json.meshes) {
+            VRMParser.json.meshes.forEach((mesh: any) => {
+                if (mesh.primitives) {
+                    mesh.primitives.forEach((prim: any) => {
+                        if (materialIndices.has(prim.material) && typeof prim.attributes?.TEXCOORD_0 === 'number') {
+                            const acc = VRMParser.json.accessors[prim.attributes.TEXCOORD_0]
+                            if (acc && acc.min && acc.max) {
+                                foundUV = true
+                                minU = Math.min(minU, acc.min[0])
+                                maxU = Math.max(maxU, acc.max[0])
+                                minV = Math.min(minV, acc.min[1])
+                                maxV = Math.max(maxV, acc.max[1])
+                            }
+                        }
+                    })
+                }
+            })
+        }
+
+        if (!foundUV) return defaultResult
+
+        const hasOverflow = minU < -0.01 || maxU > 1.01 || minV < -0.01 || maxV > 1.01
+        return { minU, maxU, minV, maxV, hasOverflow }
+    }
+
+    // テクスチャアトラスを適用してVRMを再構築
+    public static applyTextureAtlas = async (
+        atlasBlob: Blob,
+        atlasItems: Array<{
+            imageIndex?: number
+            index?: number
+            name: string
+            x: number
+            y: number
+            width: number
+            height: number
+            atlasWidth: number
+            atlasHeight: number
+        }>
+    ): Promise<void> => {
+        if (!VRMParser.json || !VRMParser.chunk1 || atlasItems.length === 0) {
+            throw new Error('VRM or Atlas items not found')
+        }
+
+        const json = VRMParser.json
+        const chunkData = VRMParser.chunk1.chunkData
+        const atlasBuf = await atlasBlob.arrayBuffer()
+        const placeholderBuf = VRMParser.PLACEHOLDER_1X1_PNG.buffer
+
+        // 画像検索ヘルパー (imageIndexの整合性を検証し、フォールバック検索もサポート)
+        const findImageInfo = (item: any): { image: any; imageIndex: number } | null => {
+            if (typeof item.imageIndex === 'number' && json.images[item.imageIndex]) {
+                const candidate = json.images[item.imageIndex]
+                if (!item.name || candidate.name === item.name || candidate.bufferView === item.id) {
+                    return { image: candidate, imageIndex: item.imageIndex }
+                }
+            }
+            const idx = json.images.findIndex((img: any) => 
+                (item.name && img.name === item.name) || 
+                (typeof item.id === 'number' && img.bufferView === item.id) ||
+                (typeof item.index === 'number' && img.bufferView === item.index)
+            )
+            if (idx !== -1) {
+                return { image: json.images[idx], imageIndex: idx }
+            }
+            return null
+        }
+
+        // 1. 各アトラスアイテムの画像特定 & プライマリ画像スロット決定
+        const primaryInfo = findImageInfo(atlasItems[0])
+        if (!primaryInfo) {
+            throw new Error('Primary image for atlas not found: ' + atlasItems[0].name)
+        }
+        const primaryImage = primaryInfo.image
+        const primaryImageIndex = primaryInfo.imageIndex
+
+        // プライマリ画像を参照する texture インデックスを特定（なければ作成）
+        let primaryTextureIndex = -1
+        if (json.textures) {
+            primaryTextureIndex = json.textures.findIndex((t: any) => t.source === primaryImageIndex)
+        }
+        if (primaryTextureIndex === -1) {
+            if (!json.textures) json.textures = []
+            primaryTextureIndex = json.textures.length
+            json.textures.push({ source: primaryImageIndex })
+        }
+
+        // 2. 各アイテムのUV変換係数を計算し、対象プリミティブのUV座標を chunkData 内で書き換え
+        const view = new DataView(chunkData.buffer, chunkData.byteOffset, chunkData.byteLength)
+        const processedAccessors = new Set<number>()
+        const allAffectedMaterialIndices = new Set<number>()
+
+        for (const item of atlasItems) {
+            const imgInfo = findImageInfo(item)
+            if (!imgInfo) continue
+
+            const scaleU = item.width / item.atlasWidth
+            const scaleV = item.height / item.atlasHeight
+            const offsetU = item.x / item.atlasWidth
+            const offsetV = item.y / item.atlasHeight
+
+            // 対象マテリアル一覧
+            const matIndices = VRMParser.getMaterialsUsingImage(imgInfo.image)
+            matIndices.forEach(m => allAffectedMaterialIndices.add(m))
+
+            // 対象メッシュプリミティブのUVを書き換え
+            if (json.meshes) {
+                json.meshes.forEach((mesh: any) => {
+                    if (!mesh.primitives) return
+                    mesh.primitives.forEach((prim: any) => {
+                        if (!matIndices.includes(prim.material)) return
+                        const texAccIdx = prim.attributes?.TEXCOORD_0
+                        if (typeof texAccIdx !== 'number') return
+
+                        if (!processedAccessors.has(texAccIdx)) {
+                            processedAccessors.add(texAccIdx)
+                            const acc = json.accessors[texAccIdx]
+                            if (acc && acc.componentType === 5126) { // 5126 = FLOAT
+                                const bv = json.bufferViews[acc.bufferView]
+                                const baseOffset = (bv.byteOffset || 0) + (acc.byteOffset || 0)
+                                const stride = bv.byteStride || 8 // VEC2 (2 floats = 8 bytes)
+                                const count = acc.count
+
+                                let minU = Infinity, maxU = -Infinity
+                                let minV = Infinity, maxV = -Infinity
+
+                                for (let k = 0; k < count; k++) {
+                                    const offset = baseOffset + k * stride
+                                    const u = view.getFloat32(offset, true)
+                                    const v = view.getFloat32(offset + 4, true)
+
+                                    const newU = offsetU + u * scaleU
+                                    const newV = offsetV + v * scaleV
+
+                                    view.setFloat32(offset, newU, true)
+                                    view.setFloat32(offset + 4, newV, true)
+
+                                    if (newU < minU) minU = newU
+                                    if (newU > maxU) maxU = newU
+                                    if (newV < minV) minV = newV
+                                    if (newV > maxV) maxV = newV
+                                }
+
+                                acc.min = [minU, minV]
+                                acc.max = [maxU, maxV]
+                            }
+                        }
+
+                        // モーフターゲット（デルタUV）が存在する場合はスケール変換
+                        if (prim.targets && Array.isArray(prim.targets)) {
+                            prim.targets.forEach((target: any) => {
+                                const morphAccIdx = target.TEXCOORD_0
+                                if (typeof morphAccIdx === 'number' && !processedAccessors.has(morphAccIdx)) {
+                                    processedAccessors.add(morphAccIdx)
+                                    const mAcc = json.accessors[morphAccIdx]
+                                    if (mAcc && mAcc.componentType === 5126) {
+                                        const mBv = json.bufferViews[mAcc.bufferView]
+                                        const mBaseOffset = (mBv.byteOffset || 0) + (mAcc.byteOffset || 0)
+                                        const mStride = mBv.byteStride || 8
+                                        let mMinU = Infinity, mMaxU = -Infinity
+                                        let mMinV = Infinity, mMaxV = -Infinity
+
+                                        for (let k = 0; k < mAcc.count; k++) {
+                                            const offset = mBaseOffset + k * mStride
+                                            const du = view.getFloat32(offset, true)
+                                            const dv = view.getFloat32(offset + 4, true)
+
+                                            const newDu = du * scaleU
+                                            const newDv = dv * scaleV
+
+                                            view.setFloat32(offset, newDu, true)
+                                            view.setFloat32(offset + 4, newDv, true)
+
+                                            if (newDu < mMinU) mMinU = newDu
+                                            if (newDu > mMaxU) mMaxU = newDu
+                                            if (newDv < mMinV) mMinV = newDv
+                                            if (newDv > mMaxV) mMaxV = newDv
+                                        }
+
+                                        mAcc.min = [mMinU, mMinV]
+                                        mAcc.max = [mMaxU, mMaxV]
+                                    }
+                                }
+                            })
+                        }
+                    })
+                })
+            }
+        }
+
+        // 3. マテリアルのテクスチャ参照をプライマリテクスチャへ切り替え
+        allAffectedMaterialIndices.forEach(mIdx => {
+            const mat = json.materials[mIdx]
+            if (mat?.pbrMetallicRoughness?.baseColorTexture) {
+                mat.pbrMetallicRoughness.baseColorTexture.index = primaryTextureIndex
+            }
+
+            // VRM 0.x materialProperties
+            const extVRM = VRMParser.getVRMExtensionJson()
+            if (extVRM?.materialProperties && extVRM.materialProperties[mIdx]?.textureProperties) {
+                const texProps = extVRM.materialProperties[mIdx].textureProperties
+                const oldMainTex = texProps._MainTex
+                if (texProps._MainTex !== undefined) {
+                    texProps._MainTex = primaryTextureIndex
+                }
+                // _ShadeTexture が _MainTex と同じテクスチャを参照していた場合はアトラスに同期
+                if (texProps._ShadeTexture !== undefined && (texProps._ShadeTexture === oldMainTex || texProps._ShadeTexture === primaryTextureIndex)) {
+                    texProps._ShadeTexture = primaryTextureIndex
+                }
+            }
+
+            // VRM 1.0 MToon
+            if (mat?.extensions?.VRMC_materials_mtoon) {
+                const mtoon = mat.extensions.VRMC_materials_mtoon
+                if (mtoon.shadeMultiplyTexture) {
+                    mtoon.shadeMultiplyTexture.index = primaryTextureIndex
+                }
+            }
+        })
+
+        // 4. bufferViews の再構築
+        // プライマリスロットにアトラス画像を格納、その他の選択画像スロットを1x1プレースホルダーに置換
+        const distChunkDataList: any[] = []
+        let byteOffset = 0
+
+        json.bufferViews.forEach((bufferView: any, index: number) => {
+            const buf = chunkData.slice(bufferView.byteOffset, bufferView.byteOffset + bufferView.byteLength)
+            distChunkDataList.push({
+                index: index,
+                byteOffset: byteOffset,
+                byteLength: buf.byteLength,
+                src: buf
+            })
+            byteOffset += buf.byteLength
+        })
+
+        // プライマリバッファビューをアトラス画像に更新
+        const primaryBvIdx = primaryImage.bufferView
+        distChunkDataList[primaryBvIdx].byteLength = atlasBuf.byteLength
+        distChunkDataList[primaryBvIdx].src = new Uint8Array(atlasBuf)
+        primaryImage.name = 'Atlas_' + primaryImage.name
+        primaryImage.mimeType = 'image/png'
+
+        // 2枚目以降の選択画像を 1x1 プレースホルダーに置換（ファイルサイズ大幅削減）
+        for (let i = 1; i < atlasItems.length; i++) {
+            const secInfo = findImageInfo(atlasItems[i])
+            if (secInfo && secInfo.image.bufferView !== primaryBvIdx) {
+                const secBvIdx = secInfo.image.bufferView
+                distChunkDataList[secBvIdx].byteLength = placeholderBuf.byteLength
+                distChunkDataList[secBvIdx].src = new Uint8Array(placeholderBuf)
+                secInfo.image.mimeType = 'image/png'
+            }
+        }
+
+        // byteOffset の再計算と 4 バイト境界アライメント（glTF 2.0 規格準拠）
+        byteOffset = 0
+        distChunkDataList.forEach((v: any, i: number) => {
+            const padding = (4 - (v.src.byteLength % 4)) % 4
+            let alignedSrc = v.src
+            if (padding > 0) {
+                alignedSrc = new Uint8Array(v.src.byteLength + padding)
+                alignedSrc.set(v.src)
+            }
+            distChunkDataList[i].byteOffset = byteOffset
+            distChunkDataList[i].byteLength = alignedSrc.byteLength
+            distChunkDataList[i].src = alignedSrc
+            byteOffset += alignedSrc.byteLength
+        })
+
+        // chunk1 の再生成
+        VRMParser.chunk1.chunkData = new Uint8Array(byteOffset)
+        distChunkDataList.forEach((v: any) => {
+            VRMParser.chunk1.chunkData.set(v.src, v.byteOffset)
+        })
+        VRMParser.chunk1.chunkLength = VRMParser.chunk1.chunkData.length
+
+        // json.bufferViews の更新
+        json.bufferViews.forEach((v: any, i: number) => {
+            v.byteLength = distChunkDataList[i].byteLength
+            v.byteOffset = distChunkDataList[i].byteOffset
+        })
+
+        // チャンクとヘッダーを再構築
+        await VRMParser.chunkRebuilding()
     }
 }
 
