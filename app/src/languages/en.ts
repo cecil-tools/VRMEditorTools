@@ -170,5 +170,17 @@ export default {
         snap: 'Snap',
         snapTooltip: 'Snap to canvas edges and adjacent textures (hold Shift to temporarily disable)',
         dragHint: 'Drag to move, corner handles to resize. Arrow keys for 1px adjustment (Shift+Arrow for 10px). Esc to cancel drag.',
+    },
+
+    // Outline Texture
+    outline: {
+        title: 'Outline',
+        addBtn: 'Add Outline Texture',
+        fromFile: 'Upload New Image',
+        fromExisting: 'Select from Existing',
+        removeBtn: 'Remove',
+        selectModalTitle: 'Select Outline Texture',
+        selectPrompt: 'Select a texture from the model to use as outline',
+        confirmRemove: 'Are you sure you want to remove the outline texture from this material?',
     }
 }
