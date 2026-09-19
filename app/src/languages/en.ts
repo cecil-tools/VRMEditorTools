@@ -175,6 +175,7 @@ export default {
     // Outline Texture
     outline: {
         title: 'Outline',
+        widthTitle: 'Outline Width',
         addBtn: 'Add Outline Texture',
         fromFile: 'Upload New Image',
         fromExisting: 'Select from Existing',

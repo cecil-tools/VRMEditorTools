@@ -19,7 +19,7 @@
     <TabFirstPerson ref="tabFirstPerson" :selectTabType="selectTabType" :firstPerson="firstPerson" :vrmScale="vrmScale" :drawVrm="drawVrm" :vrmVersion="vrmVersion" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" />
     <TabVroid :selectTabType="selectTabType" :springBoneSkirt="springBoneSkirt" />
     <TabShortVideo :selectTabType="selectTabType" />
-    <TabMaterials :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
+    <TabMaterials :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" @preview-material-outline-width="onPreviewMaterialOutlineWidth" />
     <TabMeta :selectTabType="selectTabType" :json="json" />
     <TabBlendShape ref="tabBlendShape" :selectTabType="selectTabType" :drawVrm="drawVrm" :blendShapeGroups="blendShapeGroups" :morphMeshes="morphMeshes" :json="json" :vrmVersion="vrmVersion" :changeBlendShape="changeBlendShape" @download-all-blendshapes="onDownloadAllBlendShapes" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @reload-blendshapes="reloadBlendShapes" />
     <TabArmature :selectTabType="selectTabType" :json="json" :vrmVersion="vrmVersion" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" />
@@ -225,6 +225,10 @@ export default class VRMParserView extends Vue {
 
   onToggleXRay(enabled: boolean) {
     this.$emit('toggle-xray', enabled);
+  }
+
+  onPreviewMaterialOutlineWidth(payload: { materialIndex: number, materialName: string, width: number }) {
+    this.$emit('preview-material-outline-width', payload);
   }
 
 }
