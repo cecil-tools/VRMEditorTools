@@ -13,7 +13,7 @@
       </div>
     </div>
     <div class="container vrmparserContainer">
-      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" />
+      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" />
     </div>
 </div>
 </template>
@@ -114,16 +114,32 @@ export default class Main extends Vue {
       if (vrmview.hideFirstPersonGizmo) {
         vrmview.hideFirstPersonGizmo();
       }
+      if (vrmview.hideArmatureSkeleton) {
+        vrmview.hideArmatureSkeleton();
+      }
       if (vrmview.focusFace) {
         vrmview.focusFace();
       }
+    } else if (type === 'tab_armature') {
+      if (vrmview.hideFirstPersonGizmo) {
+        vrmview.hideFirstPersonGizmo();
+      }
+      if (vrmview.showArmatureSkeleton) {
+        vrmview.showArmatureSkeleton();
+      }
     } else if (type === 'tab_first_person') {
+      if (vrmview.hideArmatureSkeleton) {
+        vrmview.hideArmatureSkeleton();
+      }
       if (vrmview.showFirstPersonGizmo && vrmparser) {
         vrmview.showFirstPersonGizmo(vrmparser.firstPerson, vrmparser.vrmVersion);
       }
     } else {
       if (vrmview.hideFirstPersonGizmo) {
         vrmview.hideFirstPersonGizmo();
+      }
+      if (vrmview.hideArmatureSkeleton) {
+        vrmview.hideArmatureSkeleton();
       }
       if (vrmview.resetCamera) {
           vrmview.resetCamera();
@@ -194,6 +210,34 @@ export default class Main extends Vue {
     const vrmview = this.$refs.vrmview as any;
     if (vrmview && vrmview.unregisterCustomExpression) {
       vrmview.unregisterCustomExpression(name);
+    }
+  }
+
+  onSelectBone(nodeIndex: number) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.highlightBone) {
+      vrmview.highlightBone(nodeIndex);
+    }
+  }
+
+  onFocusBone(nodeIndex: number) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.focusBone) {
+      vrmview.focusBone(nodeIndex);
+    }
+  }
+
+  onToggleSkeleton(enabled: boolean) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.toggleArmatureSkeleton) {
+      vrmview.toggleArmatureSkeleton(enabled);
+    }
+  }
+
+  onToggleXRay(enabled: boolean) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.setSkeletonXRay) {
+      vrmview.setSkeletonXRay(enabled);
     }
   }
 }

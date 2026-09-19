@@ -28,6 +28,11 @@ export default class VRMViewThree extends Vue {
   loader = new GLTFLoader();
   gltf: any = null;
 
+  skeletonHelper: any | null = null;
+  isSkeletonXRay = true;
+  boneHighlightGroup: any | null = null;
+  currentHighlightBoneNode: any | null = null;
+
   _engine: any = null
 
   @Prop()
@@ -110,6 +115,17 @@ export default class VRMViewThree extends Vue {
   //フレーム更新
   update = () => {
       requestAnimationFrame(this.update);
+      if (this.skeletonHelper && this.skeletonHelper.visible) {
+        this.skeletonHelper.update();
+      }
+      if (this.boneHighlightGroup && this.boneHighlightGroup.visible && this.currentHighlightBoneNode) {
+        const worldPos = new THREE.Vector3();
+        this.currentHighlightBoneNode.getWorldPosition(worldPos);
+        this.boneHighlightGroup.position.copy(worldPos);
+        const worldQuat = new THREE.Quaternion();
+        this.currentHighlightBoneNode.getWorldQuaternion(worldQuat);
+        this.boneHighlightGroup.quaternion.copy(worldQuat);
+      }
       this.render();
   }
 
@@ -120,6 +136,11 @@ export default class VRMViewThree extends Vue {
       // 表示の初期化
       this.initScene();
       this.hideFirstPersonGizmo();
+      this.hideArmatureSkeleton();
+      if (this.skeletonHelper) {
+        this.scene.remove(this.skeletonHelper);
+        this.skeletonHelper = null;
+      }
       
       // シーンから VRMを削除
       if (this.gltf != null) {
@@ -705,6 +726,175 @@ export default class VRMViewThree extends Vue {
           link.click();
       });
   } 
+
+  // アーマチュア スケルトン表示
+  public showArmatureSkeleton = () => {
+    if (!this.gltf || !this.gltf.scene) return;
+    if (!this.skeletonHelper) {
+      this.skeletonHelper = new THREE.SkeletonHelper(this.gltf.scene);
+      this.applySkeletonXRay();
+      this.scene.add(this.skeletonHelper);
+    }
+    this.skeletonHelper.visible = true;
+    this.render();
+  }
+
+  // アーマチュア スケルトン非表示
+  public hideArmatureSkeleton = () => {
+    if (this.skeletonHelper) {
+      this.skeletonHelper.visible = false;
+    }
+    this.clearBoneHighlight();
+    this.render();
+  }
+
+  // スケルトン表示切替（ON/OFF）
+  public toggleArmatureSkeleton = (visible: boolean) => {
+    if (visible) {
+      this.showArmatureSkeleton();
+    } else {
+      if (this.skeletonHelper) {
+        this.skeletonHelper.visible = false;
+        this.render();
+      }
+    }
+  }
+
+  // X線表示切替
+  public setSkeletonXRay = (enabled: boolean) => {
+    this.isSkeletonXRay = enabled;
+    this.applySkeletonXRay();
+    this.render();
+  }
+
+  private applySkeletonXRay = () => {
+    if (this.skeletonHelper) {
+      const mat = this.skeletonHelper.material as any;
+      if (mat) {
+        mat.depthTest = !this.isSkeletonXRay;
+        mat.transparent = true;
+        mat.opacity = 0.85;
+      }
+      this.skeletonHelper.renderOrder = this.isSkeletonXRay ? 998 : 0;
+    }
+  }
+
+  // ボーンハイライト用のグループ初期化
+  private initBoneHighlightGroup = () => {
+    if (this.boneHighlightGroup) return;
+    this.boneHighlightGroup = new THREE.Group();
+
+    // 座標軸ヘルパー (RGB = XYZ)
+    const axes = new THREE.AxesHelper(0.12);
+    if (axes.material) {
+      (axes.material as any).depthTest = false;
+    }
+    axes.renderOrder = 999;
+    this.boneHighlightGroup.add(axes);
+
+    // 半透明球体マーカー
+    const sphereGeo = new THREE.SphereGeometry(0.02, 16, 16);
+    const sphereMat = new THREE.MeshBasicMaterial({
+      color: 0xff3366,
+      wireframe: true,
+      depthTest: false,
+      transparent: true,
+      opacity: 0.9
+    });
+    const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+    sphere.renderOrder = 999;
+    this.boneHighlightGroup.add(sphere);
+
+    this.boneHighlightGroup.visible = false;
+    this.scene.add(this.boneHighlightGroup);
+  }
+
+  // 指定ノードのボーンをハイライト
+  public highlightBone = async (nodeIndex: number) => {
+    this.initBoneHighlightGroup();
+    if (!this.gltf) return;
+
+    let targetNode: any = null;
+    if (this.gltf.parser && this.gltf.parser.getDependency) {
+      try {
+        targetNode = await this.gltf.parser.getDependency('node', nodeIndex);
+      } catch (e) {
+        console.warn('getDependency node failed, trying scene traverse', e);
+      }
+    }
+
+    if (!targetNode && this.gltf.scene) {
+      this.gltf.scene.traverse((child: any) => {
+        const assoc = this.gltf.parser?.associations?.get(child);
+        if (assoc && assoc.nodes === nodeIndex) {
+          targetNode = child;
+        }
+      });
+    }
+
+    if (targetNode && this.boneHighlightGroup) {
+      this.currentHighlightBoneNode = targetNode;
+      const worldPos = new THREE.Vector3();
+      targetNode.getWorldPosition(worldPos);
+      this.boneHighlightGroup.position.copy(worldPos);
+
+      const worldQuat = new THREE.Quaternion();
+      targetNode.getWorldQuaternion(worldQuat);
+      this.boneHighlightGroup.quaternion.copy(worldQuat);
+
+      this.boneHighlightGroup.visible = true;
+      this.render();
+    }
+  }
+
+  // ハイライト解除
+  public clearBoneHighlight = () => {
+    if (this.boneHighlightGroup) {
+      this.boneHighlightGroup.visible = false;
+    }
+    this.currentHighlightBoneNode = null;
+    this.render();
+  }
+
+  // 指定ノードのボーンにカメラをフォーカス
+  public focusBone = async (nodeIndex: number) => {
+    if (!this.gltf || !this.camera || !this.controls) return;
+
+    let targetNode: any = null;
+    if (this.gltf.parser && this.gltf.parser.getDependency) {
+      try {
+        targetNode = await this.gltf.parser.getDependency('node', nodeIndex);
+      } catch (e) {
+        console.warn('getDependency node failed', e);
+      }
+    }
+
+    if (!targetNode && this.gltf.scene) {
+      this.gltf.scene.traverse((child: any) => {
+        const assoc = this.gltf.parser?.associations?.get(child);
+        if (assoc && assoc.nodes === nodeIndex) {
+          targetNode = child;
+        }
+      });
+    }
+
+    if (targetNode) {
+      const worldPos = new THREE.Vector3();
+      targetNode.getWorldPosition(worldPos);
+
+      this.controls.target.copy(worldPos);
+
+      const fov = this.camera.fov * (Math.PI / 180);
+      const focusSize = 0.3;
+      let distance = Math.abs((focusSize / 2) / Math.tan(fov / 2));
+      distance *= 1.8;
+
+      const sign = (VRMParser.getVRMVersion().version == 1) ? 1.0 : -1.0;
+      this.camera.position.set(worldPos.x, worldPos.y, worldPos.z + (distance * sign));
+      this.controls.update();
+      this.render();
+    }
+  }
 }
 </script>
 
