@@ -170,5 +170,17 @@ export default {
         snap: 'スナップ',
         snapTooltip: 'キャンバス境界や他テクスチャへの吸着（Shiftキーで一時無効化）',
         dragHint: 'ドラッグで移動、角ハンドルでリサイズ。矢印キーで1px微調整（Shift+矢印で10px）。Escでドラッグキャンセル。',
+    },
+
+    // アウトラインテクスチャ
+    outline: {
+        title: 'アウトライン',
+        addBtn: 'アウトラインテクスチャを追加',
+        fromFile: '新規画像を追加',
+        fromExisting: '既存テクスチャから選択',
+        removeBtn: '削除',
+        selectModalTitle: 'アウトラインテクスチャを選択',
+        selectPrompt: 'モデル内のテクスチャからアウトライン用を選択してください',
+        confirmRemove: 'このマテリアルのアウトラインテクスチャを削除してもよろしいですか？',
     }
 }

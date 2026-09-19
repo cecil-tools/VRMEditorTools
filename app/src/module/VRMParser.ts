@@ -1348,6 +1348,209 @@ class VRMParser {
         // チャンクとヘッダーを再構築
         await VRMParser.chunkRebuilding()
     }
+
+    // マテリアルのアウトラインテクスチャ情報を取得
+    public static getMaterialOutlineTexture = (materialIndex: number): { img: any; textureIndex: number } | null => {
+        if (!VRMParser.json || !VRMParser.json.materials || !VRMParser.json.materials[materialIndex]) {
+            return null
+        }
+        const json = VRMParser.json
+        const mat = json.materials[materialIndex]
+        let textureIndex = -1
+
+        // VRM 0.x MToon チェック
+        const extVRM = VRMParser.getVRMExtensionJson()
+        if (extVRM?.materialProperties && extVRM.materialProperties[materialIndex]) {
+            const texProps = extVRM.materialProperties[materialIndex].textureProperties || {}
+            if (typeof texProps._OutlineWidthTexture === 'number' && texProps._OutlineWidthTexture >= 0) {
+                textureIndex = texProps._OutlineWidthTexture
+            }
+        }
+
+        // VRM 1.0 MToon チェック
+        if (textureIndex === -1 && mat?.extensions?.VRMC_materials_mtoon) {
+            const mtoon = mat.extensions.VRMC_materials_mtoon
+            if (typeof mtoon.outlineWidthMultiplyTexture?.index === 'number' && mtoon.outlineWidthMultiplyTexture.index >= 0) {
+                textureIndex = mtoon.outlineWidthMultiplyTexture.index
+            }
+        }
+
+        if (textureIndex === -1 || !json.textures || !json.textures[textureIndex]) {
+            return null
+        }
+
+        const sourceImageIdx = json.textures[textureIndex].source
+        if (typeof sourceImageIdx !== 'number' || !VRMParser.images || !VRMParser.images[sourceImageIdx]) {
+            return null
+        }
+
+        return {
+            img: VRMParser.images[sourceImageIdx],
+            textureIndex: textureIndex
+        }
+    }
+
+    // マテリアルのアウトラインテクスチャスロットに textureIndex を設定し輪郭線を有効化
+    private static assignOutlineTextureIndex = (materialIndex: number, textureIndex: number): void => {
+        const json = VRMParser.json
+        const mat = json.materials[materialIndex]
+
+        // VRM 0.x MToon
+        const extVRM = VRMParser.getVRMExtensionJson()
+        if (extVRM?.materialProperties && extVRM.materialProperties[materialIndex]) {
+            const mp = extVRM.materialProperties[materialIndex]
+            if (!mp.textureProperties) mp.textureProperties = {}
+            mp.textureProperties._OutlineWidthTexture = textureIndex
+
+            if (!mp.floatProperties) mp.floatProperties = {}
+            // 輪郭線モードが 0 (None) の場合は 1 (WorldCoordinates) に有効化
+            if (!mp.floatProperties._OutlineWidthMode || mp.floatProperties._OutlineWidthMode === 0) {
+                mp.floatProperties._OutlineWidthMode = 1
+            }
+            // 輪郭線幅が 0 の場合は初期値 0.1 を設定
+            if (!mp.floatProperties._OutlineWidth || mp.floatProperties._OutlineWidth <= 0) {
+                mp.floatProperties._OutlineWidth = 0.1
+            }
+
+            if (!mp.vectorProperties) mp.vectorProperties = {}
+            if (!mp.vectorProperties._OutlineWidthTexture) {
+                mp.vectorProperties._OutlineWidthTexture = [0, 0, 1, 1]
+            }
+            if (!mp.vectorProperties._OutlineColor) {
+                mp.vectorProperties._OutlineColor = [0, 0, 0, 1]
+            }
+        }
+
+        // VRM 1.0 MToon
+        if (mat?.extensions?.VRMC_materials_mtoon) {
+            const mtoon = mat.extensions.VRMC_materials_mtoon
+            mtoon.outlineWidthMultiplyTexture = { index: textureIndex }
+            if (!mtoon.outlineWidthMode || mtoon.outlineWidthMode === 'none') {
+                mtoon.outlineWidthMode = 'worldCoordinates'
+            }
+            if (!mtoon.outlineWidthFactor || mtoon.outlineWidthFactor <= 0) {
+                mtoon.outlineWidthFactor = 0.05
+            }
+        }
+    }
+
+    // ファイルから新規画像を登録してマテリアルのアウトラインテクスチャに設定
+    public static setMaterialOutlineTextureFromFile = async (
+        materialIndex: number,
+        fileBuf: ArrayBuffer,
+        mimeType: string,
+        fileName = 'outline_texture'
+    ): Promise<void> => {
+        if (!VRMParser.json || !VRMParser.chunk1) {
+            throw new Error('VRM data not found')
+        }
+        const json = VRMParser.json
+        const chunkData = VRMParser.chunk1.chunkData
+
+        // 1. 新規バッファビューの作成（4バイト境界パディング）
+        const padding = (4 - (fileBuf.byteLength % 4)) % 4
+        let alignedBuf = new Uint8Array(fileBuf)
+        if (padding > 0) {
+            const padded = new Uint8Array(fileBuf.byteLength + padding)
+            padded.set(new Uint8Array(fileBuf))
+            alignedBuf = padded
+        }
+
+        // 現在の chunkData の末尾に追記
+        const newByteOffset = chunkData.byteLength
+        const newChunk1Data = new Uint8Array(newByteOffset + alignedBuf.byteLength)
+        newChunk1Data.set(chunkData, 0)
+        newChunk1Data.set(alignedBuf, newByteOffset)
+
+        VRMParser.chunk1.chunkData = newChunk1Data
+        VRMParser.chunk1.chunkLength = newChunk1Data.byteLength
+
+        // 2. bufferViews に追加
+        if (!json.bufferViews) json.bufferViews = []
+        const newBvIdx = json.bufferViews.length
+        json.bufferViews.push({
+            buffer: 0,
+            byteOffset: newByteOffset,
+            byteLength: fileBuf.byteLength
+        })
+
+        // 3. images に追加
+        if (!json.images) json.images = []
+        const newImgIdx = json.images.length
+        json.images.push({
+            name: fileName,
+            bufferView: newBvIdx,
+            mimeType: mimeType || 'image/png'
+        })
+
+        // 4. textures に追加
+        if (!json.textures) json.textures = []
+        const newTexIdx = json.textures.length
+        json.textures.push({
+            source: newImgIdx
+        })
+
+        // 5. マテリアルに割り当て
+        VRMParser.assignOutlineTextureIndex(materialIndex, newTexIdx)
+
+        // 6. チャンク再構築
+        await VRMParser.chunkRebuilding()
+    }
+
+    // 既存の画像インデックスをマテリアルのアウトラインテクスチャに設定
+    public static setMaterialOutlineTextureFromExisting = async (
+        materialIndex: number,
+        imageIndex: number
+    ): Promise<void> => {
+        if (!VRMParser.json || !VRMParser.json.images || !VRMParser.json.images[imageIndex]) {
+            throw new Error('Image not found: ' + imageIndex)
+        }
+        const json = VRMParser.json
+
+        // imageIndex を参照する texture を検索または作成
+        if (!json.textures) json.textures = []
+        let textureIndex = json.textures.findIndex((t: any) => t.source === imageIndex)
+        if (textureIndex === -1) {
+            textureIndex = json.textures.length
+            json.textures.push({ source: imageIndex })
+        }
+
+        // マテリアルに割り当て
+        VRMParser.assignOutlineTextureIndex(materialIndex, textureIndex)
+
+        // チャンク再構築
+        await VRMParser.chunkRebuilding()
+    }
+
+    // マテリアルのアウトラインテクスチャ設定を解除
+    public static removeMaterialOutlineTexture = async (materialIndex: number): Promise<void> => {
+        if (!VRMParser.json || !VRMParser.json.materials || !VRMParser.json.materials[materialIndex]) {
+            throw new Error('Material not found: ' + materialIndex)
+        }
+        const json = VRMParser.json
+        const mat = json.materials[materialIndex]
+
+        // VRM 0.x MToon
+        const extVRM = VRMParser.getVRMExtensionJson()
+        if (extVRM?.materialProperties && extVRM.materialProperties[materialIndex]) {
+            const mp = extVRM.materialProperties[materialIndex]
+            if (mp.textureProperties) {
+                delete mp.textureProperties._OutlineWidthTexture
+            }
+            if (mp.floatProperties) {
+                mp.floatProperties._OutlineWidthMode = 0 // None
+            }
+        }
+
+        // VRM 1.0 MToon
+        if (mat?.extensions?.VRMC_materials_mtoon) {
+            const mtoon = mat.extensions.VRMC_materials_mtoon
+            delete mtoon.outlineWidthMultiplyTexture
+            mtoon.outlineWidthMode = 'none'
+        }
+
+        await VRMParser.chunkRebuilding()
+    }
 }
 
 export default VRMParser;
