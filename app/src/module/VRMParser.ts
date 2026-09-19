@@ -1551,6 +1551,80 @@ class VRMParser {
 
         await VRMParser.chunkRebuilding()
     }
+
+    // マテリアルのアウトライン太さを取得
+    public static getMaterialOutlineWidth = (materialIndex: number): number => {
+        if (!VRMParser.json || !VRMParser.json.materials || !VRMParser.json.materials[materialIndex]) {
+            return 0
+        }
+        const json = VRMParser.json
+        const mat = json.materials[materialIndex]
+
+        // VRM 0.x MToon チェック
+        const extVRM = VRMParser.getVRMExtensionJson()
+        if (extVRM?.materialProperties && extVRM.materialProperties[materialIndex]) {
+            const mp = extVRM.materialProperties[materialIndex]
+            const mode = mp.floatProperties?._OutlineWidthMode ?? 0
+            if (mode === 0) return 0
+            const width = mp.floatProperties?._OutlineWidth ?? 0
+            return Math.round(width * 1000) / 1000
+        }
+
+        // VRM 1.0 MToon チェック
+        if (mat?.extensions?.VRMC_materials_mtoon) {
+            const mtoon = mat.extensions.VRMC_materials_mtoon
+            const mode = mtoon.outlineWidthMode ?? 'none'
+            if (mode === 'none') return 0
+            const width = mtoon.outlineWidthFactor ?? 0
+            return Math.round(width * 1000) / 1000
+        }
+
+        return 0
+    }
+
+    // マテリアルのアウトライン太さを設定
+    public static setMaterialOutlineWidth = async (materialIndex: number, width: number): Promise<void> => {
+        if (!VRMParser.json || !VRMParser.json.materials || !VRMParser.json.materials[materialIndex]) {
+            throw new Error('Material not found: ' + materialIndex)
+        }
+        const json = VRMParser.json
+        const mat = json.materials[materialIndex]
+
+        // VRM 0.x MToon
+        const extVRM = VRMParser.getVRMExtensionJson()
+        if (extVRM?.materialProperties && extVRM.materialProperties[materialIndex]) {
+            const mp = extVRM.materialProperties[materialIndex]
+            if (!mp.floatProperties) mp.floatProperties = {}
+            mp.floatProperties._OutlineWidth = width
+
+            if (width > 0) {
+                if (!mp.floatProperties._OutlineWidthMode || mp.floatProperties._OutlineWidthMode === 0) {
+                    mp.floatProperties._OutlineWidthMode = 1 // WorldCoordinates
+                }
+                if (!mp.vectorProperties) mp.vectorProperties = {}
+                if (!mp.vectorProperties._OutlineColor) {
+                    mp.vectorProperties._OutlineColor = [0, 0, 0, 1]
+                }
+            } else {
+                mp.floatProperties._OutlineWidthMode = 0 // None
+            }
+        }
+
+        // VRM 1.0 MToon
+        if (mat?.extensions?.VRMC_materials_mtoon) {
+            const mtoon = mat.extensions.VRMC_materials_mtoon
+            mtoon.outlineWidthFactor = width
+            if (width > 0) {
+                if (!mtoon.outlineWidthMode || mtoon.outlineWidthMode === 'none') {
+                    mtoon.outlineWidthMode = 'worldCoordinates'
+                }
+            } else {
+                mtoon.outlineWidthMode = 'none'
+            }
+        }
+
+        await VRMParser.chunkRebuilding()
+    }
 }
 
 export default VRMParser;

@@ -74,6 +74,35 @@
                     </div>
                   </td>
                 </tr>
+
+                <!-- outline width (線の太さ) -->
+                <tr class="outline-width-row">
+                  <td class="title">{{ $t('outline.widthTitle') }}</td>
+                  <td colspan="2" class="outline-width-cell">
+                    <div class="slider-with-val">
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        v-model.number="mat.outlineWidth"
+                        @input="onOutlineWidthInput(mat)"
+                        @change="onOutlineWidthChange(mat)"
+                        class="range-slider"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        max="2"
+                        step="0.01"
+                        v-model.number="mat.outlineWidth"
+                        @input="onOutlineWidthInput(mat)"
+                        @change="onOutlineWidthChange(mat)"
+                        class="number-input-mini"
+                      />
+                    </div>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </td>
@@ -147,7 +176,8 @@ export default class TabMaterials extends Vue {
         outlineTexture: outlineInfo ? {
           img: outlineInfo.img,
           textureIndex: outlineInfo.textureIndex
-        } : null
+        } : null,
+        outlineWidth: VRMParser.getMaterialOutlineWidth(i)
       })
     })
 
@@ -262,6 +292,32 @@ export default class TabMaterials extends Vue {
     } catch (e) {
       console.error('removeOutlineTexture error', e)
       alert('アウトラインテクスチャの削除に失敗しました: ' + e)
+    }
+  }
+
+  // スライダー操作中のリアルタイムプレビュー
+  onOutlineWidthInput(mat: any) {
+    const width = typeof mat.outlineWidth === 'number' ? mat.outlineWidth : 0
+    this.$emit('preview-material-outline-width', {
+      materialIndex: mat.index,
+      materialName: mat.name,
+      width: width
+    })
+  }
+
+  // スライダー操作完了時のデータ保存（チャンク再構築）
+  async onOutlineWidthChange(mat: any) {
+    const width = typeof mat.outlineWidth === 'number' ? mat.outlineWidth : 0
+    try {
+      await VRMParser.setMaterialOutlineWidth(mat.index, width)
+      this.$emit('preview-material-outline-width', {
+        materialIndex: mat.index,
+        materialName: mat.name,
+        width: width
+      })
+    } catch (e) {
+      console.error('setMaterialOutlineWidth error', e)
+      alert('アウトライン太さの更新に失敗しました: ' + e)
     }
   }
 }
@@ -426,6 +482,35 @@ $danger-dark: #dc2626;
                 border-color: $primary;
                 color: $primary;
               }
+            }
+          }
+        }
+
+        .outline-width-cell {
+          padding: 6px 0;
+          vertical-align: middle;
+          text-align: left;
+
+          .slider-with-val {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 260px;
+
+            .range-slider {
+              flex: 1;
+              cursor: pointer;
+              accent-color: $primary;
+            }
+
+            .number-input-mini {
+              width: 54px;
+              padding: 2px 4px;
+              border: 1px solid $border-color;
+              border-radius: 4px;
+              font-size: 12px;
+              text-align: right;
+              color: #334155;
             }
           }
         }

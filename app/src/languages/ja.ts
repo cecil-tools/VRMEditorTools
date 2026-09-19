@@ -175,6 +175,7 @@ export default {
     // アウトラインテクスチャ
     outline: {
         title: 'アウトライン',
+        widthTitle: '線の太さ',
         addBtn: 'アウトラインテクスチャを追加',
         fromFile: '新規画像を追加',
         fromExisting: '既存テクスチャから選択',
