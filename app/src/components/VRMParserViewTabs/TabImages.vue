@@ -168,8 +168,23 @@ export default class TabImages extends Vue {
   importImage(img: any) {
     const input = document.createElement('input')
     input.type = 'file'
-    input.onchange = (event: any) => {
-      const file = event.currentTarget.files[0]
+    input.accept = 'image/*, .png, .jpg, .jpeg'
+    input.style.position = 'fixed'
+    input.style.top = '-9999px'
+    input.style.opacity = '0'
+    document.body.appendChild(input)
+
+    const cleanup = () => {
+      input.removeEventListener('change', onChange)
+      input.removeEventListener('cancel', cleanup)
+      if (document.body.contains(input)) {
+        document.body.removeChild(input)
+      }
+    }
+
+    const onChange = (event: any) => {
+      const file = event.target?.files?.[0]
+      cleanup()
       if (!file) return
 
       const fileReader = new FileReader()
@@ -195,6 +210,9 @@ export default class TabImages extends Vue {
       }
       fileReader.readAsArrayBuffer(file)
     }
+
+    input.addEventListener('change', onChange)
+    input.addEventListener('cancel', cleanup)
     input.click()
   }
 }

@@ -232,13 +232,27 @@ export default class TabMaterials extends Vue {
   importImage(img: any) {
     const input = document.createElement('input')
     input.type = 'file'
-    input.accept = 'image/png,image/jpeg'
-    input.onchange = async (event: any) => {
-      const file = event.currentTarget.files?.[0]
+    input.accept = 'image/*, .png, .jpg, .jpeg'
+    input.style.position = 'fixed'
+    input.style.top = '-9999px'
+    input.style.opacity = '0'
+    document.body.appendChild(input)
+
+    const cleanup = () => {
+      input.removeEventListener('change', onChange)
+      input.removeEventListener('cancel', cleanup)
+      if (document.body.contains(input)) {
+        document.body.removeChild(input)
+      }
+    }
+
+    const onChange = async (event: any) => {
+      const file = event.target?.files?.[0]
+      cleanup()
       if (!file) return
 
-      const raw: ArrayBuffer = await file.arrayBuffer()
       try {
+        const raw: ArrayBuffer = await file.arrayBuffer()
         await VRMParser.replaceImage(img, raw)
         await this.afterUpdate()
       } catch (e) {
@@ -246,6 +260,9 @@ export default class TabMaterials extends Vue {
         alert('画像の差し替えに失敗しました: ' + e)
       }
     }
+
+    input.addEventListener('change', onChange)
+    input.addEventListener('cancel', cleanup)
     input.click()
   }
 
@@ -253,13 +270,27 @@ export default class TabMaterials extends Vue {
   addOutlineFromFile(mat: any) {
     const input = document.createElement('input')
     input.type = 'file'
-    input.accept = 'image/png,image/jpeg'
-    input.onchange = async (event: any) => {
-      const file = event.currentTarget.files?.[0]
+    input.accept = 'image/*, .png, .jpg, .jpeg'
+    input.style.position = 'fixed'
+    input.style.top = '-9999px'
+    input.style.opacity = '0'
+    document.body.appendChild(input)
+
+    const cleanup = () => {
+      input.removeEventListener('change', onChange)
+      input.removeEventListener('cancel', cleanup)
+      if (document.body.contains(input)) {
+        document.body.removeChild(input)
+      }
+    }
+
+    const onChange = async (event: any) => {
+      const file = event.target?.files?.[0]
+      cleanup()
       if (!file) return
 
-      const raw: ArrayBuffer = await file.arrayBuffer()
       try {
+        const raw: ArrayBuffer = await file.arrayBuffer()
         await VRMParser.setMaterialOutlineTextureFromFile(mat.index, raw, file.type, file.name)
         await this.afterUpdate()
       } catch (e) {
@@ -267,6 +298,9 @@ export default class TabMaterials extends Vue {
         alert('アウトラインテクスチャの追加に失敗しました: ' + e)
       }
     }
+
+    input.addEventListener('change', onChange)
+    input.addEventListener('cancel', cleanup)
     input.click()
   }
 
