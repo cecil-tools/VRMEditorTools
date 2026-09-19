@@ -261,8 +261,14 @@ class VRMParser {
                 byteOffset += blob.size
             })
             // console.log('images', VRMParser.json.images)
-            // index が 一致する json.images を取り出す
-            let image = VRMParser.json.images[img.index]
+            // imageIndex または index が 一致する json.images を取り出す
+            let image = typeof img.imageIndex === 'number'
+                ? VRMParser.json.images[img.imageIndex]
+                : VRMParser.json.images[img.index]
+            if (typeof image == 'undefined') {
+                // bufferView が一致する json.images を探す
+                image = VRMParser.json.images.find((v: any) => v.bufferView === img.index)
+            }
             if (typeof image == 'undefined') {
                 // 名前が一致する json.images を取り出す
                 image = VRMParser.json.images.filter((v: any) => (v.name == img.name))[0]
