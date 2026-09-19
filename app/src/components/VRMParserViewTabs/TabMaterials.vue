@@ -82,9 +82,9 @@
                     <div class="slider-with-val">
                       <input
                         type="range"
-                        min="0"
+                        min="0.001"
                         max="1"
-                        step="0.01"
+                        step="0.001"
                         v-model.number="mat.outlineWidth"
                         @input="onOutlineWidthInput(mat)"
                         @change="onOutlineWidthChange(mat)"
@@ -92,9 +92,9 @@
                       />
                       <input
                         type="number"
-                        min="0"
+                        min="0.001"
                         max="2"
-                        step="0.01"
+                        step="0.001"
                         v-model.number="mat.outlineWidth"
                         @input="onOutlineWidthInput(mat)"
                         @change="onOutlineWidthChange(mat)"
