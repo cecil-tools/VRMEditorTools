@@ -3,12 +3,13 @@
     <!-- TABメニュー -->
     <div id="tab">
       <ul class="tabMenu">
-        <li @click="clickSelectTab('tab_images')">{{$t('tabImages')}}</li>
-        <li @click="clickSelectTab('tab_materials')">{{$t('tabMaterials')}}</li>
-        <li @click="clickSelectTab('tab_first_person')">{{$t('tabFirstPerson')}}</li>
-        <li @click="clickSelectTab('tab_meta')">{{$t('tabMeta')}}</li>
-        <li @click="clickSelectTab('tab_vroid')">{{$t('tabVroid')}}</li>
-        <li @click="clickSelectTab('tab_blendshape')">{{$t('tabBlendShape')}}</li>
+        <li :class="{ active: selectTabType === 'tab_images' }" @click="clickSelectTab('tab_images')">{{$t('tabImages')}}</li>
+        <li :class="{ active: selectTabType === 'tab_materials' }" @click="clickSelectTab('tab_materials')">{{$t('tabMaterials')}}</li>
+        <li :class="{ active: selectTabType === 'tab_first_person' }" @click="clickSelectTab('tab_first_person')">{{$t('tabFirstPerson')}}</li>
+        <li :class="{ active: selectTabType === 'tab_meta' }" @click="clickSelectTab('tab_meta')">{{$t('tabMeta')}}</li>
+        <li :class="{ active: selectTabType === 'tab_vroid' }" @click="clickSelectTab('tab_vroid')">{{$t('tabVroid')}}</li>
+        <li :class="{ active: selectTabType === 'tab_blendshape' }" @click="clickSelectTab('tab_blendshape')">{{$t('tabBlendShape')}}</li>
+        <li :class="{ active: selectTabType === 'tab_armature' }" @click="clickSelectTab('tab_armature')">{{$t('tabArmature')}}</li>
         <!--
         <li @click="clickSelectTab('tab_short_video')">{{$t('tabShortVideo')}}</li>
         -->
@@ -21,6 +22,7 @@
     <TabMaterials :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" />
     <TabMeta :selectTabType="selectTabType" :json="json" />
     <TabBlendShape ref="tabBlendShape" :selectTabType="selectTabType" :drawVrm="drawVrm" :blendShapeGroups="blendShapeGroups" :morphMeshes="morphMeshes" :json="json" :vrmVersion="vrmVersion" :changeBlendShape="changeBlendShape" @download-all-blendshapes="onDownloadAllBlendShapes" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @reload-blendshapes="reloadBlendShapes" />
+    <TabArmature :selectTabType="selectTabType" :json="json" :vrmVersion="vrmVersion" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" />
   </div>
 </template>
 
@@ -35,6 +37,7 @@ import TabShortVideo from '@/components/VRMParserViewTabs/TabShortVideo.vue'
 import TabMaterials from '@/components/VRMParserViewTabs/TabMaterials.vue'
 import TabMeta from '@/components/VRMParserViewTabs/TabMeta.vue'
 import TabBlendShape from './VRMParserViewTabs/TabBlendShape.vue'
+import TabArmature from '@/components/VRMParserViewTabs/TabArmature.vue'
 
 @Component({
   components: {
@@ -44,7 +47,8 @@ import TabBlendShape from './VRMParserViewTabs/TabBlendShape.vue'
     TabShortVideo,
     TabMaterials,
     TabMeta,
-    TabBlendShape
+    TabBlendShape,
+    TabArmature
   }
 })
 export default class VRMParserView extends Vue {
@@ -207,6 +211,22 @@ export default class VRMParserView extends Vue {
     this.$emit('unregister-custom-expression', name);
   }
 
+  onSelectBone(nodeIndex: number) {
+    this.$emit('select-bone', nodeIndex);
+  }
+
+  onFocusBone(nodeIndex: number) {
+    this.$emit('focus-bone', nodeIndex);
+  }
+
+  onToggleSkeleton(enabled: boolean) {
+    this.$emit('toggle-skeleton', enabled);
+  }
+
+  onToggleXRay(enabled: boolean) {
+    this.$emit('toggle-xray', enabled);
+  }
+
 }
 </script>
 
@@ -216,24 +236,36 @@ export default class VRMParserView extends Vue {
 
   #tab {
     width: 100%;
-    max-width: 500px;
+    max-width: 600px;
 
     .tabMenu {
       display: flex;
+      flex-wrap: wrap;
       padding-left: 3px;
       margin: 0;
 
       li {
         display: inline;
         width: auto;
-        padding: 10px 10px;
+        padding: 8px 10px;
         color: $white;
         border-right: 1px solid $white;
+        border-bottom: 1px solid $white;
         background-color: $green;
         cursor: pointer;
+        font-size: 13px;
               
         &:last-child {
           border-right: none;
+        }
+
+        &.active {
+          background-color: #004d73;
+          font-weight: bold;
+        }
+
+        &:hover:not(.active) {
+          background-color: #006da2;
         }
       }      
     }

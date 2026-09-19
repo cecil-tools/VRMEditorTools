@@ -685,6 +685,310 @@ class VRMParser {
                 .catch(e => reject(e))
         })
     }
+
+    // クォータニオン [x, y, z, w] をオイラー角（度数法）に変換
+    public static quatToEulerDegrees = (q: [number, number, number, number]): [number, number, number] => {
+        const [x, y, z, w] = q
+        const sinr_cosp = 2 * (w * x + y * z)
+        const cosr_cosp = 1 - 2 * (x * x + y * y)
+        const roll = Math.atan2(sinr_cosp, cosr_cosp)
+
+        const sinp = 2 * (w * y - z * x)
+        let pitch = 0
+        if (Math.abs(sinp) >= 1) {
+            pitch = (Math.sign(sinp) * Math.PI) / 2
+        } else {
+            pitch = Math.asin(sinp)
+        }
+
+        const siny_cosp = 2 * (w * z + x * y)
+        const cosy_cosp = 1 - 2 * (y * y + z * z)
+        const yaw = Math.atan2(siny_cosp, cosy_cosp)
+
+        const radToDeg = 180 / Math.PI
+        return [
+            parseFloat((roll * radToDeg).toFixed(2)),
+            parseFloat((pitch * radToDeg).toFixed(2)),
+            parseFloat((yaw * radToDeg).toFixed(2))
+        ]
+    }
+
+    // VRM 標準ヒューマノイドボーン定義一覧
+    public static readonly STANDARD_HUMANOID_BONES = [
+        // 体幹 (Torso)
+        { name: 'hips', category: 'torso', isRequired: true },
+        { name: 'spine', category: 'torso', isRequired: true },
+        { name: 'chest', category: 'torso', isRequired: false },
+        { name: 'upperChest', category: 'torso', isRequired: false },
+        { name: 'neck', category: 'torso', isRequired: false },
+        // 頭部 (Head)
+        { name: 'head', category: 'head', isRequired: true },
+        { name: 'leftEye', category: 'head', isRequired: false },
+        { name: 'rightEye', category: 'head', isRequired: false },
+        { name: 'jaw', category: 'head', isRequired: false },
+        // 左腕 (Left Arm)
+        { name: 'leftShoulder', category: 'leftArm', isRequired: false },
+        { name: 'leftUpperArm', category: 'leftArm', isRequired: true },
+        { name: 'leftLowerArm', category: 'leftArm', isRequired: true },
+        { name: 'leftHand', category: 'leftArm', isRequired: true },
+        // 右腕 (Right Arm)
+        { name: 'rightShoulder', category: 'rightArm', isRequired: false },
+        { name: 'rightUpperArm', category: 'rightArm', isRequired: true },
+        { name: 'rightLowerArm', category: 'rightArm', isRequired: true },
+        { name: 'rightHand', category: 'rightArm', isRequired: true },
+        // 左手 指 (Left Fingers)
+        { name: 'leftThumbMetacarpal', category: 'leftFingers', isRequired: false },
+        { name: 'leftThumbProximal', category: 'leftFingers', isRequired: false },
+        { name: 'leftThumbDistal', category: 'leftFingers', isRequired: false },
+        { name: 'leftIndexProximal', category: 'leftFingers', isRequired: false },
+        { name: 'leftIndexIntermediate', category: 'leftFingers', isRequired: false },
+        { name: 'leftIndexDistal', category: 'leftFingers', isRequired: false },
+        { name: 'leftMiddleProximal', category: 'leftFingers', isRequired: false },
+        { name: 'leftMiddleIntermediate', category: 'leftFingers', isRequired: false },
+        { name: 'leftMiddleDistal', category: 'leftFingers', isRequired: false },
+        { name: 'leftRingProximal', category: 'leftFingers', isRequired: false },
+        { name: 'leftRingIntermediate', category: 'leftFingers', isRequired: false },
+        { name: 'leftRingDistal', category: 'leftFingers', isRequired: false },
+        { name: 'leftLittleProximal', category: 'leftFingers', isRequired: false },
+        { name: 'leftLittleIntermediate', category: 'leftFingers', isRequired: false },
+        { name: 'leftLittleDistal', category: 'leftFingers', isRequired: false },
+        // 右手 指 (Right Fingers)
+        { name: 'rightThumbMetacarpal', category: 'rightFingers', isRequired: false },
+        { name: 'rightThumbProximal', category: 'rightFingers', isRequired: false },
+        { name: 'rightThumbDistal', category: 'rightFingers', isRequired: false },
+        { name: 'rightIndexProximal', category: 'rightFingers', isRequired: false },
+        { name: 'rightIndexIntermediate', category: 'rightFingers', isRequired: false },
+        { name: 'rightIndexDistal', category: 'rightFingers', isRequired: false },
+        { name: 'rightMiddleProximal', category: 'rightFingers', isRequired: false },
+        { name: 'rightMiddleIntermediate', category: 'rightFingers', isRequired: false },
+        { name: 'rightMiddleDistal', category: 'rightFingers', isRequired: false },
+        { name: 'rightRingProximal', category: 'rightFingers', isRequired: false },
+        { name: 'rightRingIntermediate', category: 'rightFingers', isRequired: false },
+        { name: 'rightRingDistal', category: 'rightFingers', isRequired: false },
+        { name: 'rightLittleProximal', category: 'rightFingers', isRequired: false },
+        { name: 'rightLittleIntermediate', category: 'rightFingers', isRequired: false },
+        { name: 'rightLittleDistal', category: 'rightFingers', isRequired: false },
+        // 左脚 (Left Leg)
+        { name: 'leftUpperLeg', category: 'leftLeg', isRequired: true },
+        { name: 'leftLowerLeg', category: 'leftLeg', isRequired: true },
+        { name: 'leftFoot', category: 'leftLeg', isRequired: true },
+        { name: 'leftToes', category: 'leftLeg', isRequired: false },
+        // 右脚 (Right Leg)
+        { name: 'rightUpperLeg', category: 'rightLeg', isRequired: true },
+        { name: 'rightLowerLeg', category: 'rightLeg', isRequired: true },
+        { name: 'rightFoot', category: 'rightLeg', isRequired: true },
+        { name: 'rightToes', category: 'rightLeg', isRequired: false }
+    ]
+
+    // ヒューマノイドボーン対応マップ（VRM 0.x / 1.0 統一）を取得
+    public static getHumanoidBonesData = () => {
+        if (!VRMParser.json) {
+            return {
+                humanoidBones: [],
+                nodeToHumanoid: {},
+                mappedCount: 0,
+                requiredTotalCount: 15,
+                requiredMappedCount: 0
+            }
+        }
+
+        const extVRM = VRMParser.getVRMExtensionJson()
+        const version = VRMParser.getVRMVersion()
+        const nodeToHumanoid: { [key: number]: string } = {}
+        const rawBoneMap: { [boneName: string]: number } = {}
+
+        if (extVRM && extVRM.humanoid) {
+            if (version.version === 0) {
+                // VRM 0.x: humanBones: [ { bone: "hips", node: 1 } ]
+                const humanBones = extVRM.humanoid.humanBones || []
+                humanBones.forEach((b: any) => {
+                    if (b && typeof b.node === 'number') {
+                        nodeToHumanoid[b.node] = b.bone
+                        rawBoneMap[b.bone.toLowerCase()] = b.node
+                    }
+                })
+            } else {
+                // VRM 1.0: humanBones: { hips: { node: 1 } }
+                const humanBones = extVRM.humanoid.humanBones || {}
+                Object.keys(humanBones).forEach((boneName: string) => {
+                    const item = humanBones[boneName]
+                    if (item && typeof item.node === 'number') {
+                        nodeToHumanoid[item.node] = boneName
+                        rawBoneMap[boneName.toLowerCase()] = item.node
+                    }
+                })
+            }
+        }
+
+        let mappedCount = 0
+        let requiredMappedCount = 0
+        const requiredTotalCount = VRMParser.STANDARD_HUMANOID_BONES.filter(b => b.isRequired).length
+
+        const humanoidBones = VRMParser.STANDARD_HUMANOID_BONES.map(def => {
+            const lowerName = def.name.toLowerCase()
+            let nodeIndex: number | null = rawBoneMap[lowerName] ?? null
+
+            // VRM 0.x の指名揺れ（thumbProximal / thumbIntermediate）対応
+            if (nodeIndex === null && lowerName.includes('thumbmetacarpal')) {
+                const alt = lowerName.replace('thumbmetacarpal', 'thumbproximal')
+                nodeIndex = rawBoneMap[alt] ?? null
+            } else if (nodeIndex === null && lowerName.includes('thumbproximal')) {
+                const alt = lowerName.replace('thumbproximal', 'thumbintermediate')
+                nodeIndex = rawBoneMap[alt] ?? null
+            }
+
+            const isMapped = nodeIndex !== null && typeof nodeIndex === 'number'
+            if (isMapped) {
+                mappedCount++
+                if (def.isRequired) requiredMappedCount++
+            }
+
+            const node = (isMapped && VRMParser.json.nodes) ? VRMParser.json.nodes[nodeIndex!] : null
+
+            return {
+                name: def.name,
+                category: def.category,
+                isRequired: def.isRequired,
+                isMapped: isMapped,
+                nodeIndex: nodeIndex,
+                nodeName: node ? (node.name || `Node_${nodeIndex}`) : null
+            }
+        })
+
+        return {
+            humanoidBones,
+            nodeToHumanoid,
+            mappedCount,
+            requiredTotalCount,
+            requiredMappedCount
+        }
+    }
+
+    // アーマチュアおよびボーン階層ツリーを取得
+    public static getBoneHierarchy = () => {
+        if (!VRMParser.json || !VRMParser.json.nodes) {
+            return {
+                roots: [],
+                allNodes: [],
+                skinJoints: new Set<number>(),
+                parentMap: {},
+                childrenMap: {}
+            }
+        }
+
+        const nodes = VRMParser.json.nodes
+        const { nodeToHumanoid } = VRMParser.getHumanoidBonesData()
+
+        // スキンに登録されているジョイントインデックスを収集
+        const skinJoints = new Set<number>()
+        if (VRMParser.json.skins) {
+            VRMParser.json.skins.forEach((skin: any) => {
+                if (skin.joints && Array.isArray(skin.joints)) {
+                    skin.joints.forEach((j: number) => skinJoints.add(j))
+                }
+            })
+        }
+
+        const parentMap: { [nodeIndex: number]: number } = {}
+        const childrenMap: { [nodeIndex: number]: number[] } = {}
+
+        // 親子関係マップ構築
+        nodes.forEach((node: any, idx: number) => {
+            childrenMap[idx] = node.children ? [...node.children] : []
+            if (node.children && Array.isArray(node.children)) {
+                node.children.forEach((childIdx: number) => {
+                    parentMap[childIdx] = idx
+                })
+            }
+        })
+
+        // 各ノード情報の構築関数
+        const buildTreeNode = (nodeIndex: number): any => {
+            const node = nodes[nodeIndex] || {}
+            const rotation: [number, number, number, number] = node.rotation
+                ? [node.rotation[0] ?? 0, node.rotation[1] ?? 0, node.rotation[2] ?? 0, node.rotation[3] ?? 1]
+                : [0, 0, 0, 1]
+            const euler = VRMParser.quatToEulerDegrees(rotation)
+            const translation: [number, number, number] = node.translation
+                ? [node.translation[0] ?? 0, node.translation[1] ?? 0, node.translation[2] ?? 0]
+                : [0, 0, 0]
+            const scale: [number, number, number] = node.scale
+                ? [node.scale[0] ?? 1, node.scale[1] ?? 1, node.scale[2] ?? 1]
+                : [1, 1, 1]
+
+            const isHumanoid = nodeToHumanoid[nodeIndex] !== undefined
+            const isJoint = skinJoints.has(nodeIndex)
+            const isMesh = typeof node.mesh === 'number'
+
+            const childIndices = childrenMap[nodeIndex] || []
+            const children = childIndices.map((cIdx: number) => buildTreeNode(cIdx))
+
+            return {
+                index: nodeIndex,
+                name: node.name || `Node_${nodeIndex}`,
+                humanoidBone: nodeToHumanoid[nodeIndex] || null,
+                translation,
+                rotation,
+                euler,
+                scale,
+                isHumanoid,
+                isJoint,
+                isMesh,
+                children
+            }
+        }
+
+        // ルートノードの決定
+        // scene[0].nodes から探索（なければ親のいないノード）
+        let rootIndices: number[] = []
+        if (VRMParser.json.scenes && VRMParser.json.scenes[0] && Array.isArray(VRMParser.json.scenes[0].nodes)) {
+            rootIndices = VRMParser.json.scenes[0].nodes
+        } else {
+            rootIndices = nodes
+                .map((_: any, idx: number) => idx)
+                .filter((idx: number) => parentMap[idx] === undefined)
+        }
+
+        const roots = rootIndices.map(rIdx => buildTreeNode(rIdx))
+
+        // 全ノードのフラット一覧（検索・直接参照用）
+        const allNodes = nodes.map((node: any, idx: number) => {
+            const rotation: [number, number, number, number] = node.rotation
+                ? [node.rotation[0] ?? 0, node.rotation[1] ?? 0, node.rotation[2] ?? 0, node.rotation[3] ?? 1]
+                : [0, 0, 0, 1]
+            const euler = VRMParser.quatToEulerDegrees(rotation)
+            const translation: [number, number, number] = node.translation
+                ? [node.translation[0] ?? 0, node.translation[1] ?? 0, node.translation[2] ?? 0]
+                : [0, 0, 0]
+            const scale: [number, number, number] = node.scale
+                ? [node.scale[0] ?? 1, node.scale[1] ?? 1, node.scale[2] ?? 1]
+                : [1, 1, 1]
+
+            return {
+                index: idx,
+                name: node.name || `Node_${idx}`,
+                humanoidBone: nodeToHumanoid[idx] || null,
+                translation,
+                rotation,
+                euler,
+                scale,
+                parentIndex: parentMap[idx] !== undefined ? parentMap[idx] : null,
+                parentName: parentMap[idx] !== undefined ? (nodes[parentMap[idx]]?.name || `Node_${parentMap[idx]}`) : null,
+                childIndices: childrenMap[idx] || [],
+                isHumanoid: nodeToHumanoid[idx] !== undefined,
+                isJoint: skinJoints.has(idx),
+                isMesh: typeof node.mesh === 'number'
+            }
+        })
+
+        return {
+            roots,
+            allNodes,
+            skinJoints,
+            parentMap,
+            childrenMap
+        }
+    }
 }
 
 export default VRMParser;
