@@ -150,6 +150,17 @@ export default class TabMaterials extends Vue {
   isSelectModalOpen = false
   targetMaterial: any = null
 
+  mounted() {
+    this.vrmMaterials = this.reloadVrmMaterials()
+  }
+
+  @Watch('selectTabType')
+  private changeSelectTabType(newVal: string) {
+    if (newVal === 'tab_materials') {
+      this.vrmMaterials = this.reloadVrmMaterials()
+    }
+  }
+
   @Watch('vrmImages')
   private changeVrmImages() {
     this.vrmMaterials = this.reloadVrmMaterials()
@@ -177,7 +188,8 @@ export default class TabMaterials extends Vue {
           img: outlineInfo.img,
           textureIndex: outlineInfo.textureIndex
         } : null,
-        outlineWidth: VRMParser.getMaterialOutlineWidth(i)
+        outlineWidth: VRMParser.getMaterialOutlineWidth(i),
+        outlineMode: VRMParser.getMaterialOutlineMode(i)
       })
     })
 
@@ -485,6 +497,8 @@ $danger-dark: #dc2626;
             }
           }
         }
+
+
 
         .outline-width-cell {
           padding: 6px 0;

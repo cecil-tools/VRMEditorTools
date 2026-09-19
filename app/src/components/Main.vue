@@ -13,7 +13,7 @@
       </div>
     </div>
     <div class="container vrmparserContainer">
-      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" @preview-material-outline-width="onPreviewMaterialOutlineWidth" />
+      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" @preview-material-outline-width="onPreviewMaterialOutlineWidth" @preview-material-outline-mode="onPreviewMaterialOutlineMode" />
     </div>
 </div>
 </template>
@@ -245,6 +245,13 @@ export default class Main extends Vue {
     const vrmview = this.$refs.vrmview as any;
     if (vrmview && vrmview.setMaterialOutlineWidth) {
       vrmview.setMaterialOutlineWidth(payload.materialName, payload.width, payload.materialIndex);
+    }
+  }
+
+  onPreviewMaterialOutlineMode(payload: { materialIndex: number, materialName: string, mode: 'none' | 'worldCoordinates' | 'screenCoordinates' }) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.setMaterialOutlineMode) {
+      vrmview.setMaterialOutlineMode(payload.materialName, payload.mode, payload.materialIndex);
     }
   }
 }

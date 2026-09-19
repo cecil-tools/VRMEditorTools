@@ -508,9 +508,72 @@ export default class VRMViewThree extends Vue {
     this.render();
   }
 
+  // マテリアルのアウトラインモードを即時反映（リアルタイムプレビュー）
+  setMaterialOutlineMode = (materialName: string, mode: 'none' | 'worldCoordinates' | 'screenCoordinates', materialIndex?: number) => {
+    if (!this.gltf || !this.gltf.scene) return;
+
+    this.gltf.scene.traverse((child: any) => {
+      if (!child.isMesh || !child.material) return;
+
+      const isMaterialTarget = (mat: any) => {
+        if (!mat) return false;
+        const baseName = mat.name ? mat.name.replace(/\s*\(Outline\)$/, '') : '';
+        if (baseName === materialName) return true;
+        if (typeof materialIndex === 'number' && this.gltf.parser?.associations) {
+          const assoc = this.gltf.parser.associations.get(mat);
+          if (assoc && (assoc.material === materialIndex || assoc.materials === materialIndex)) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+      if (Array.isArray(child.material)) {
+        child.material.forEach((mat: any) => {
+          if (isMaterialTarget(mat)) {
+            mat.outlineWidthMode = mode;
+            if (mode === 'none') {
+              mat.outlineWidthFactor = 0;
+            }
+          }
+        });
+      } else {
+        if (isMaterialTarget(child.material)) {
+          const surfaceMaterial = child.material;
+          surfaceMaterial.outlineWidthMode = mode;
+
+          if (mode !== 'none') {
+            child.material = [surfaceMaterial];
+            const outlineMaterial = surfaceMaterial.clone();
+            outlineMaterial.name = (surfaceMaterial.name || '') + ' (Outline)';
+            outlineMaterial.isOutline = true;
+            outlineMaterial.side = THREE.BackSide;
+            outlineMaterial.outlineWidthMode = mode;
+            if (!outlineMaterial.outlineWidthFactor || outlineMaterial.outlineWidthFactor <= 0) {
+              const defaultWidth = (this.currentVrmVersion === 1) ? 0.05 : 0.0015;
+              outlineMaterial.outlineWidthFactor = defaultWidth;
+            }
+            child.material.push(outlineMaterial);
+
+            const geometry = child.geometry;
+            if (geometry && (!geometry.groups || geometry.groups.length === 0)) {
+              const primitiveVertices = geometry.index ? geometry.index.count : geometry.attributes.position.count / 3;
+              geometry.addGroup(0, primitiveVertices, 0);
+              geometry.addGroup(0, primitiveVertices, 1);
+            }
+          }
+        }
+      }
+    });
+
+    this.render();
+  }
+
   // マテリアルのアウトライン太さを即時反映（リアルタイムプレビュー）
   setMaterialOutlineWidth = (materialName: string, width: number, materialIndex?: number) => {
     if (!this.gltf || !this.gltf.scene) return;
+
+    const factor = (this.currentVrmVersion === 1) ? width : width * 0.01;
 
     this.gltf.scene.traverse((child: any) => {
       if (!child.isMesh || !child.material) return;
@@ -532,39 +595,14 @@ export default class VRMViewThree extends Vue {
         // 既にアウトライン生成済みのメッシュ
         child.material.forEach((mat: any) => {
           if (isMaterialTarget(mat)) {
-            mat.outlineWidthFactor = width;
-            if (width > 0 && (mat.outlineWidthMode === 'none' || !mat.outlineWidthMode)) {
-              mat.outlineWidthMode = 'worldCoordinates';
-            }
+            mat.outlineWidthFactor = factor;
           }
         });
       } else {
         // 単一マテリアルの場合
         if (isMaterialTarget(child.material)) {
           const surfaceMaterial = child.material;
-          surfaceMaterial.outlineWidthFactor = width;
-
-          if (width > 0) {
-            // アウトラインが未生成だった場合はアウトラインマテリアルとグループを生成
-            if (surfaceMaterial.outlineWidthMode === 'none' || !surfaceMaterial.outlineWidthMode) {
-              surfaceMaterial.outlineWidthMode = 'worldCoordinates';
-            }
-            child.material = [surfaceMaterial];
-            const outlineMaterial = surfaceMaterial.clone();
-            outlineMaterial.name = (surfaceMaterial.name || '') + ' (Outline)';
-            outlineMaterial.isOutline = true;
-            outlineMaterial.side = THREE.BackSide;
-            outlineMaterial.outlineWidthMode = 'worldCoordinates';
-            outlineMaterial.outlineWidthFactor = width;
-            child.material.push(outlineMaterial);
-
-            const geometry = child.geometry;
-            if (geometry && (!geometry.groups || geometry.groups.length === 0)) {
-              const primitiveVertices = geometry.index ? geometry.index.count : geometry.attributes.position.count / 3;
-              geometry.addGroup(0, primitiveVertices, 0);
-              geometry.addGroup(0, primitiveVertices, 1);
-            }
-          }
+          surfaceMaterial.outlineWidthFactor = factor;
         }
       }
     });
