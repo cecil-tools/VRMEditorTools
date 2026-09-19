@@ -596,9 +596,6 @@ export default class VRMViewThree extends Vue {
         child.material.forEach((mat: any) => {
           if (isMaterialTarget(mat)) {
             mat.outlineWidthFactor = factor;
-            if (width > 0 && (mat.outlineWidthMode === 'none' || !mat.outlineWidthMode)) {
-              mat.outlineWidthMode = 'worldCoordinates';
-            }
           }
         });
       } else {
@@ -606,28 +603,6 @@ export default class VRMViewThree extends Vue {
         if (isMaterialTarget(child.material)) {
           const surfaceMaterial = child.material;
           surfaceMaterial.outlineWidthFactor = factor;
-
-          if (width > 0) {
-            // アウトラインが未生成だった場合はアウトラインマテリアルとグループを生成
-            if (surfaceMaterial.outlineWidthMode === 'none' || !surfaceMaterial.outlineWidthMode) {
-              surfaceMaterial.outlineWidthMode = 'worldCoordinates';
-            }
-            child.material = [surfaceMaterial];
-            const outlineMaterial = surfaceMaterial.clone();
-            outlineMaterial.name = (surfaceMaterial.name || '') + ' (Outline)';
-            outlineMaterial.isOutline = true;
-            outlineMaterial.side = THREE.BackSide;
-            outlineMaterial.outlineWidthMode = 'worldCoordinates';
-            outlineMaterial.outlineWidthFactor = factor;
-            child.material.push(outlineMaterial);
-
-            const geometry = child.geometry;
-            if (geometry && (!geometry.groups || geometry.groups.length === 0)) {
-              const primitiveVertices = geometry.index ? geometry.index.count : geometry.attributes.position.count / 3;
-              geometry.addGroup(0, primitiveVertices, 0);
-              geometry.addGroup(0, primitiveVertices, 1);
-            }
-          }
         }
       }
     });

@@ -1685,10 +1685,10 @@ class VRMParser {
                 if (!mp.floatProperties) mp.floatProperties = {}
                 mp.floatProperties._OutlineWidth = width
 
+                if (mp.floatProperties._OutlineWidthMode === undefined) {
+                    mp.floatProperties._OutlineWidthMode = 1 // WorldCoordinates
+                }
                 if (width > 0) {
-                    if (!mp.floatProperties._OutlineWidthMode || mp.floatProperties._OutlineWidthMode === 0) {
-                        mp.floatProperties._OutlineWidthMode = 1 // WorldCoordinates
-                    }
                     if (!mp.vectorProperties) mp.vectorProperties = {}
                     if (!mp.vectorProperties._OutlineColor) {
                         mp.vectorProperties._OutlineColor = [0, 0, 0, 1]
@@ -1701,10 +1701,8 @@ class VRMParser {
         if (mat?.extensions?.VRMC_materials_mtoon) {
             const mtoon = mat.extensions.VRMC_materials_mtoon
             mtoon.outlineWidthFactor = width
-            if (width > 0) {
-                if (!mtoon.outlineWidthMode || mtoon.outlineWidthMode === 'none') {
-                    mtoon.outlineWidthMode = 'worldCoordinates'
-                }
+            if (mtoon.outlineWidthMode === undefined) {
+                mtoon.outlineWidthMode = 'worldCoordinates'
             }
         }
 

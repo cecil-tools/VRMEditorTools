@@ -75,24 +75,8 @@
                   </td>
                 </tr>
 
-                <!-- outline mode (モード) -->
-                <tr class="outline-mode-row">
-                  <td class="title">{{ $t('outline.modeTitle') }}</td>
-                  <td colspan="2" class="outline-mode-cell">
-                    <select
-                      v-model="mat.outlineMode"
-                      @change="onOutlineModeChange(mat)"
-                      class="mode-select"
-                    >
-                      <option value="none">{{ $t('outline.modeNone') }}</option>
-                      <option value="worldCoordinates">{{ $t('outline.modeWorld') }}</option>
-                      <option value="screenCoordinates">{{ $t('outline.modeScreen') }}</option>
-                    </select>
-                  </td>
-                </tr>
-
                 <!-- outline width (線の太さ) -->
-                <tr class="outline-width-row" :class="{ 'row-disabled': mat.outlineMode === 'none' }">
+                <tr class="outline-width-row">
                   <td class="title">{{ $t('outline.widthTitle') }}</td>
                   <td colspan="2" class="outline-width-cell">
                     <div class="slider-with-val">
@@ -323,41 +307,9 @@ export default class TabMaterials extends Vue {
     }
   }
 
-  // アウトラインモード変更
-  async onOutlineModeChange(mat: any) {
-    const mode = mat.outlineMode || 'none'
-    try {
-      await VRMParser.setMaterialOutlineMode(mat.index, mode)
-      this.$emit('preview-material-outline-mode', {
-        materialIndex: mat.index,
-        materialName: mat.name,
-        mode: mode
-      })
-      if (mode !== 'none') {
-        const width = typeof mat.outlineWidth === 'number' ? mat.outlineWidth : 0.15
-        this.$emit('preview-material-outline-width', {
-          materialIndex: mat.index,
-          materialName: mat.name,
-          width: width
-        })
-      }
-    } catch (e) {
-      console.error('setMaterialOutlineMode error', e)
-      alert('アウトラインモードの更新に失敗しました: ' + e)
-    }
-  }
-
   // スライダー操作中のリアルタイムプレビュー
   onOutlineWidthInput(mat: any) {
     const width = typeof mat.outlineWidth === 'number' ? mat.outlineWidth : 0
-    if (mat.outlineMode === 'none' && width > 0) {
-      mat.outlineMode = 'worldCoordinates'
-      this.$emit('preview-material-outline-mode', {
-        materialIndex: mat.index,
-        materialName: mat.name,
-        mode: 'worldCoordinates'
-      })
-    }
     this.$emit('preview-material-outline-width', {
       materialIndex: mat.index,
       materialName: mat.name,
@@ -546,30 +498,7 @@ $danger-dark: #dc2626;
           }
         }
 
-        .outline-mode-cell {
-          padding: 6px 0;
-          vertical-align: middle;
-          text-align: left;
 
-          .mode-select {
-            padding: 3px 8px;
-            font-size: 12px;
-            border: 1px solid $border-color;
-            border-radius: 4px;
-            background: #ffffff;
-            color: #334155;
-            cursor: pointer;
-
-            &:focus {
-              border-color: $primary;
-              outline: none;
-            }
-          }
-        }
-
-        .outline-width-row.row-disabled {
-          opacity: 0.6;
-        }
 
         .outline-width-cell {
           padding: 6px 0;
