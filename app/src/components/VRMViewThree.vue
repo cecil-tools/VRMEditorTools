@@ -550,7 +550,8 @@ export default class VRMViewThree extends Vue {
             outlineMaterial.side = THREE.BackSide;
             outlineMaterial.outlineWidthMode = mode;
             if (!outlineMaterial.outlineWidthFactor || outlineMaterial.outlineWidthFactor <= 0) {
-              outlineMaterial.outlineWidthFactor = 0.15;
+              const defaultWidth = (this.currentVrmVersion === 1) ? 0.05 : 0.0015;
+              outlineMaterial.outlineWidthFactor = defaultWidth;
             }
             child.material.push(outlineMaterial);
 
@@ -572,6 +573,8 @@ export default class VRMViewThree extends Vue {
   setMaterialOutlineWidth = (materialName: string, width: number, materialIndex?: number) => {
     if (!this.gltf || !this.gltf.scene) return;
 
+    const factor = (this.currentVrmVersion === 1) ? width : width * 0.01;
+
     this.gltf.scene.traverse((child: any) => {
       if (!child.isMesh || !child.material) return;
 
@@ -592,7 +595,7 @@ export default class VRMViewThree extends Vue {
         // 既にアウトライン生成済みのメッシュ
         child.material.forEach((mat: any) => {
           if (isMaterialTarget(mat)) {
-            mat.outlineWidthFactor = width;
+            mat.outlineWidthFactor = factor;
             if (width > 0 && (mat.outlineWidthMode === 'none' || !mat.outlineWidthMode)) {
               mat.outlineWidthMode = 'worldCoordinates';
             }
@@ -602,7 +605,7 @@ export default class VRMViewThree extends Vue {
         // 単一マテリアルの場合
         if (isMaterialTarget(child.material)) {
           const surfaceMaterial = child.material;
-          surfaceMaterial.outlineWidthFactor = width;
+          surfaceMaterial.outlineWidthFactor = factor;
 
           if (width > 0) {
             // アウトラインが未生成だった場合はアウトラインマテリアルとグループを生成
@@ -615,7 +618,7 @@ export default class VRMViewThree extends Vue {
             outlineMaterial.isOutline = true;
             outlineMaterial.side = THREE.BackSide;
             outlineMaterial.outlineWidthMode = 'worldCoordinates';
-            outlineMaterial.outlineWidthFactor = width;
+            outlineMaterial.outlineWidthFactor = factor;
             child.material.push(outlineMaterial);
 
             const geometry = child.geometry;
