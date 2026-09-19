@@ -175,6 +175,10 @@ export default {
     // Outline Texture
     outline: {
         title: 'Outline',
+        modeTitle: 'Mode',
+        modeNone: 'None',
+        modeWorld: 'World Coordinates',
+        modeScreen: 'Screen Coordinates',
         widthTitle: 'Outline Width',
         addBtn: 'Add Outline Texture',
         fromFile: 'Upload New Image',

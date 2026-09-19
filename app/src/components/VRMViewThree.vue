@@ -508,6 +508,66 @@ export default class VRMViewThree extends Vue {
     this.render();
   }
 
+  // マテリアルのアウトラインモードを即時反映（リアルタイムプレビュー）
+  setMaterialOutlineMode = (materialName: string, mode: 'none' | 'worldCoordinates' | 'screenCoordinates', materialIndex?: number) => {
+    if (!this.gltf || !this.gltf.scene) return;
+
+    this.gltf.scene.traverse((child: any) => {
+      if (!child.isMesh || !child.material) return;
+
+      const isMaterialTarget = (mat: any) => {
+        if (!mat) return false;
+        const baseName = mat.name ? mat.name.replace(/\s*\(Outline\)$/, '') : '';
+        if (baseName === materialName) return true;
+        if (typeof materialIndex === 'number' && this.gltf.parser?.associations) {
+          const assoc = this.gltf.parser.associations.get(mat);
+          if (assoc && (assoc.material === materialIndex || assoc.materials === materialIndex)) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+      if (Array.isArray(child.material)) {
+        child.material.forEach((mat: any) => {
+          if (isMaterialTarget(mat)) {
+            mat.outlineWidthMode = mode;
+            if (mode === 'none') {
+              mat.outlineWidthFactor = 0;
+            }
+          }
+        });
+      } else {
+        if (isMaterialTarget(child.material)) {
+          const surfaceMaterial = child.material;
+          surfaceMaterial.outlineWidthMode = mode;
+
+          if (mode !== 'none') {
+            child.material = [surfaceMaterial];
+            const outlineMaterial = surfaceMaterial.clone();
+            outlineMaterial.name = (surfaceMaterial.name || '') + ' (Outline)';
+            outlineMaterial.isOutline = true;
+            outlineMaterial.side = THREE.BackSide;
+            outlineMaterial.outlineWidthMode = mode;
+            if (!outlineMaterial.outlineWidthFactor || outlineMaterial.outlineWidthFactor <= 0) {
+              outlineMaterial.outlineWidthFactor = 0.15;
+            }
+            child.material.push(outlineMaterial);
+
+            const geometry = child.geometry;
+            if (geometry && (!geometry.groups || geometry.groups.length === 0)) {
+              const primitiveVertices = geometry.index ? geometry.index.count : geometry.attributes.position.count / 3;
+              geometry.addGroup(0, primitiveVertices, 0);
+              geometry.addGroup(0, primitiveVertices, 1);
+            }
+          }
+        }
+      }
+    });
+
+    this.render();
+  }
+
   // マテリアルのアウトライン太さを即時反映（リアルタイムプレビュー）
   setMaterialOutlineWidth = (materialName: string, width: number, materialIndex?: number) => {
     if (!this.gltf || !this.gltf.scene) return;

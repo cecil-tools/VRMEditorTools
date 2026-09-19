@@ -175,6 +175,10 @@ export default {
     // アウトラインテクスチャ
     outline: {
         title: 'アウトライン',
+        modeTitle: 'モード',
+        modeNone: 'なし',
+        modeWorld: 'ワールド座標',
+        modeScreen: 'スクリーン座標',
         widthTitle: '線の太さ',
         addBtn: 'アウトラインテクスチャを追加',
         fromFile: '新規画像を追加',
