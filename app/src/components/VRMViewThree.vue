@@ -33,6 +33,11 @@ export default class VRMViewThree extends Vue {
   boneHighlightGroup: any | null = null;
   currentHighlightBoneNode: any | null = null;
 
+  // アクセサリ管理
+  accessoriesMap: Map<string, { id: string; object: any; boneNode: any; item: any }> = new Map();
+  activeAccessoryId: string | null = null;
+  accessoryTransformControls: any | null = null;
+
   _engine: any = null
 
   @Prop()
@@ -137,6 +142,7 @@ export default class VRMViewThree extends Vue {
       this.initScene();
       this.hideFirstPersonGizmo();
       this.hideArmatureSkeleton();
+      this.clearAllAccessories();
       if (this.skeletonHelper) {
         this.scene.remove(this.skeletonHelper);
         this.skeletonHelper = null;
@@ -230,6 +236,25 @@ export default class VRMViewThree extends Vue {
     });
 
     this.scene.add(this.transformControls);
+
+    // アクセサリ専用 TransformControls 初期化
+    if (this.accessoryTransformControls == null) {
+      this.accessoryTransformControls = new TransformControls(this.camera!, canvas);
+      this.accessoryTransformControls.setMode('translate');
+      this.accessoryTransformControls.setSize(0.6);
+
+      this.accessoryTransformControls.addEventListener('dragging-changed', (event: any) => {
+        if (this.controls) {
+          this.controls.enabled = !event.value;
+        }
+      });
+
+      this.accessoryTransformControls.addEventListener('objectChange', () => {
+        this.onAccessoryGizmoChange();
+      });
+
+      this.scene.add(this.accessoryTransformControls);
+    }
 
     // 視点マーカー（半透明球体）の作成
     // 深度テストを無効にし、頭部内部に入っても埋もれないよう最前面描画
@@ -996,6 +1021,316 @@ export default class VRMViewThree extends Vue {
       this.controls.update();
       this.render();
     }
+  }
+
+  // ===== アクセサリ管理・操作メソッド =====
+
+  // 指定ボーン探索（nodeIndex または boneName）
+  public findBoneNode = async (boneName: string, nodeIndex?: number): Promise<any | null> => {
+    if (!this.gltf) return null;
+
+    let targetNode: any = null;
+    // 1. nodeIndex で探索
+    if (nodeIndex !== undefined && nodeIndex !== null && this.gltf.parser && this.gltf.parser.getDependency) {
+      try {
+        targetNode = await this.gltf.parser.getDependency('node', nodeIndex);
+      } catch (e) {
+        console.warn('findBoneNode: getDependency node failed', e);
+      }
+    }
+
+    // 2. humanoidボーン名で探索
+    if (!targetNode) {
+      const vrm = this.gltf?.userData?.vrm;
+      if (vrm?.humanoid) {
+        try {
+          if (vrm.humanoid.getRawBoneNode) {
+            targetNode = vrm.humanoid.getRawBoneNode(boneName.toLowerCase());
+          } else if (vrm.humanoid.getBoneNode) {
+            targetNode = vrm.humanoid.getBoneNode(boneName.toLowerCase());
+          }
+        } catch (e) {
+          // ignore error if humanoid bone node cannot be retrieved
+        }
+      }
+    }
+
+    // 3. シーングラフ走査
+    if (!targetNode && this.gltf.scene) {
+      this.gltf.scene.traverse((child: any) => {
+        if (targetNode) return;
+        if (nodeIndex !== undefined && nodeIndex !== null) {
+          const assoc = this.gltf.parser?.associations?.get(child);
+          if (assoc && assoc.nodes === nodeIndex) {
+            targetNode = child;
+            return;
+          }
+        }
+        if (child.name && child.name.toLowerCase() === boneName.toLowerCase()) {
+          targetNode = child;
+          return;
+        }
+      });
+    }
+
+    return targetNode;
+  }
+
+  // アクセサリGLB読み込み・ボーン配下への配置
+  public loadAccessory = async (payload: { item: any; buffer: ArrayBuffer }) => {
+    const { item, buffer } = payload;
+    const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+    if (canvas) {
+      this.initTransformControls(canvas);
+    }
+
+    const loader = new GLTFLoader();
+    loader.parse(
+      buffer,
+      '',
+      async (gltf: any) => {
+        const accessoryScene = gltf.scene;
+        accessoryScene.name = `accessory_${item.id}`;
+
+        // ボーンを探索して配下に配置
+        const boneNode = await this.findBoneNode(item.targetBoneName, item.targetNodeIndex);
+        if (boneNode) {
+          boneNode.add(accessoryScene);
+        } else if (this.gltf && this.gltf.scene) {
+          this.gltf.scene.add(accessoryScene);
+        } else {
+          this.scene.add(accessoryScene);
+        }
+
+        // 初期Transform設定
+        accessoryScene.position.set(item.position.x, item.position.y, item.position.z);
+        accessoryScene.rotation.set(
+          item.rotation.x * (Math.PI / 180),
+          item.rotation.y * (Math.PI / 180),
+          item.rotation.z * (Math.PI / 180)
+        );
+        accessoryScene.scale.set(item.scale.x, item.scale.y, item.scale.z);
+
+        this.accessoriesMap.set(item.id, {
+          id: item.id,
+          object: accessoryScene,
+          boneNode: boneNode || this.gltf?.scene || this.scene,
+          item: item
+        });
+
+        this.selectAccessory(item.id);
+        this.render();
+      },
+      (error: any) => {
+        console.error('Error parsing accessory GLB', error);
+      }
+    );
+  }
+
+  // アクセサリの配置先ボーン変更
+  public changeAccessoryBone = async (payload: { id: string; boneName: string; nodeIndex: number }) => {
+    const acc = this.accessoriesMap.get(payload.id);
+    if (!acc) return;
+
+    const newBone = await this.findBoneNode(payload.boneName, payload.nodeIndex);
+    if (newBone && newBone !== acc.boneNode) {
+      acc.boneNode.remove(acc.object);
+      newBone.add(acc.object);
+      acc.boneNode = newBone;
+      if (this.accessoryTransformControls && this.activeAccessoryId === payload.id) {
+        this.accessoryTransformControls.attach(acc.object);
+      }
+      this.render();
+    }
+  }
+
+  // ギズモ操作時のコールバック（UIへの通知）
+  private onAccessoryGizmoChange = () => {
+    if (!this.activeAccessoryId) return;
+    const acc = this.accessoriesMap.get(this.activeAccessoryId);
+    if (!acc || !acc.object) return;
+
+    const pos = acc.object.position;
+    const rot = acc.object.rotation;
+    const scl = acc.object.scale;
+
+    const position = {
+      x: parseFloat(pos.x.toFixed(4)),
+      y: parseFloat(pos.y.toFixed(4)),
+      z: parseFloat(pos.z.toFixed(4))
+    };
+
+    const rotation = {
+      x: parseFloat((rot.x * (180 / Math.PI)).toFixed(2)),
+      y: parseFloat((rot.y * (180 / Math.PI)).toFixed(2)),
+      z: parseFloat((rot.z * (180 / Math.PI)).toFixed(2))
+    };
+
+    const scale = {
+      x: parseFloat(scl.x.toFixed(4)),
+      y: parseFloat(scl.y.toFixed(4)),
+      z: parseFloat(scl.z.toFixed(4))
+    };
+
+    this.$emit('change-accessory-transform-from-gizmo', {
+      id: this.activeAccessoryId,
+      position,
+      rotation,
+      scale
+    });
+  }
+
+  // UIからのTransform変更を反映
+  public setAccessoryTransform = (payload: {
+    id: string;
+    position: { x: number; y: number; z: number };
+    rotation: { x: number; y: number; z: number };
+    scale: { x: number; y: number; z: number };
+  }) => {
+    const acc = this.accessoriesMap.get(payload.id);
+    if (!acc || !acc.object) return;
+
+    acc.object.position.set(payload.position.x, payload.position.y, payload.position.z);
+    acc.object.rotation.set(
+      payload.rotation.x * (Math.PI / 180),
+      payload.rotation.y * (Math.PI / 180),
+      payload.rotation.z * (Math.PI / 180)
+    );
+    acc.object.scale.set(payload.scale.x, payload.scale.y, payload.scale.z);
+
+    if (this.accessoryTransformControls && this.activeAccessoryId === payload.id) {
+      this.accessoryTransformControls.updateMatrixWorld();
+    }
+    this.render();
+  }
+
+  // 操作モード切り替え（translate / rotate / scale）
+  public setAccessoryTransformMode = (mode: 'translate' | 'rotate' | 'scale') => {
+    if (this.accessoryTransformControls) {
+      this.accessoryTransformControls.setMode(mode);
+    }
+  }
+
+  // アクセサリ選択
+  public selectAccessory = (id: string | null) => {
+    this.activeAccessoryId = id;
+    const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+    if (canvas) {
+      this.initTransformControls(canvas);
+    }
+    if (!this.accessoryTransformControls) return;
+
+    if (id) {
+      const acc = this.accessoriesMap.get(id);
+      if (acc && acc.object && acc.object.visible) {
+        this.accessoryTransformControls.attach(acc.object);
+        this.accessoryTransformControls.visible = true;
+      } else {
+        this.accessoryTransformControls.detach();
+      }
+    } else {
+      this.accessoryTransformControls.detach();
+    }
+    this.render();
+  }
+
+  // ギズモ非表示
+  public hideAccessoryGizmo = () => {
+    if (this.accessoryTransformControls) {
+      this.accessoryTransformControls.detach();
+    }
+  }
+
+  // ギズモ表示
+  public showAccessoryGizmo = () => {
+    if (this.activeAccessoryId) {
+      this.selectAccessory(this.activeAccessoryId);
+    }
+  }
+
+  // アクセサリにフォーカス
+  public focusAccessory = (id: string) => {
+    const acc = this.accessoriesMap.get(id);
+    if (!acc || !acc.object || !this.camera || !this.controls) return;
+
+    const worldPos = new THREE.Vector3();
+    acc.object.getWorldPosition(worldPos);
+
+    this.controls.target.copy(worldPos);
+    const fov = this.camera.fov * (Math.PI / 180);
+    const focusSize = 0.4;
+    let distance = Math.abs((focusSize / 2) / Math.tan(fov / 2));
+    distance *= 1.8;
+
+    const sign = (VRMParser.getVRMVersion().version == 1) ? 1.0 : -1.0;
+    this.camera.position.set(worldPos.x, worldPos.y, worldPos.z + (distance * sign));
+    this.controls.update();
+    this.render();
+  }
+
+  // アクセサリ削除
+  public removeAccessory = (id: string) => {
+    const acc = this.accessoriesMap.get(id);
+    if (!acc) return;
+
+    if (this.activeAccessoryId === id) {
+      this.hideAccessoryGizmo();
+      this.activeAccessoryId = null;
+    }
+
+    if (acc.boneNode && acc.object) {
+      acc.boneNode.remove(acc.object);
+    }
+
+    acc.object.traverse((child: any) => {
+      if (child.isMesh) {
+        child.geometry?.dispose();
+        if (Array.isArray(child.material)) {
+          child.material.forEach((m: any) => m.dispose());
+        } else if (child.material) {
+          child.material.dispose();
+        }
+      }
+    });
+
+    this.accessoriesMap.delete(id);
+    this.render();
+  }
+
+  // 表示/非表示切り替え
+  public toggleAccessoryVisibility = (payload: { id: string; visible: boolean }) => {
+    const acc = this.accessoriesMap.get(payload.id);
+    if (acc && acc.object) {
+      acc.object.visible = payload.visible;
+      if (!payload.visible && this.activeAccessoryId === payload.id && this.accessoryTransformControls) {
+        this.accessoryTransformControls.detach();
+      } else if (payload.visible && this.activeAccessoryId === payload.id && this.accessoryTransformControls) {
+        this.accessoryTransformControls.attach(acc.object);
+      }
+      this.render();
+    }
+  }
+
+  // 全アクセサリクリア
+  public clearAllAccessories = () => {
+    this.hideAccessoryGizmo();
+    this.accessoriesMap.forEach((acc) => {
+      if (acc.boneNode && acc.object) {
+        acc.boneNode.remove(acc.object);
+      }
+      acc.object.traverse((child: any) => {
+        if (child.isMesh) {
+          child.geometry?.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach((m: any) => m.dispose());
+          } else if (child.material) {
+            child.material.dispose();
+          }
+        }
+      });
+    });
+    this.accessoriesMap.clear();
+    this.activeAccessoryId = null;
   }
 }
 </script>
