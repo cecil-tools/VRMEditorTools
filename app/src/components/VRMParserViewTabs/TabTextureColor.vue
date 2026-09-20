@@ -15,6 +15,14 @@
           </button>
           <button
             type="button"
+            class="btn-tool-mini"
+            v-if="selectedImages.length > 0 && !isAllSelected"
+            @click="deselectAll"
+          >
+            {{ $t('textureColor.deselectAll') }}
+          </button>
+          <button
+            type="button"
             class="btn-tool-mini btn-toggle-simple"
             :class="{ active: isSimpleView }"
             @click="toggleSimpleView"
@@ -58,7 +66,7 @@
     </div>
 
     <!-- モバイル用ナビゲーション切り替えバー (幅768px以下で表示) -->
-    <div class="mobile-nav-bar" v-if="selectedImages.length > 0">
+    <div class="mobile-nav-bar" v-if="activeImage">
       <div class="mobile-tab-group">
         <button
           type="button"
@@ -90,7 +98,7 @@
     <!-- メインエリア: コントロールパネル + プレビューパネル -->
     <div
       class="color-editor-main"
-      v-if="selectedImages.length > 0"
+      v-if="activeImage"
       :class="{
         'mobile-show-adjust': mobileActiveTab === 'adjust',
         'mobile-show-preview': mobileActiveTab === 'preview'
@@ -426,9 +434,12 @@
     </div>
 
     <!-- 共通アクションバー（VRM適用・ダウンロード） -->
-    <div class="common-actions-bar" v-if="selectedImages.length > 0">
+    <div class="common-actions-bar" v-if="activeImage">
       <div class="action-status">
         <span v-if="isApplying" class="status-loading">⏳ 適用中 ({{ appliedCount }}/{{ selectedImages.length }})...</span>
+        <span v-else-if="selectedImages.length === 0" class="status-unsaved">
+          ● 適用対象未選択 (0件選択中)
+        </span>
         <span v-else-if="hasChanges" class="status-unsaved">
           ● 未適用の変更があります ({{ selectedImages.length }}件)
         </span>
@@ -450,7 +461,7 @@
           @click="applyToVRM"
           :disabled="selectedImages.length === 0 || !hasChanges || isApplying"
         >
-          ✨ <span class="btn-text-full">{{ $t('textureColor.applyToSelected', { count: selectedImages.length }) }}</span><span class="btn-text-short">{{ $t('textureColor.applyShort', { count: selectedImages.length }) }}</span>
+          ✨ <span class="btn-text-full">{{ selectedImages.length > 0 ? $t('textureColor.applyToSelected', { count: selectedImages.length }) : $t('textureColor.applyToVRM') }}</span><span class="btn-text-short">{{ $t('textureColor.applyShort', { count: selectedImages.length }) }}</span>
         </button>
       </div>
     </div>
@@ -586,6 +597,9 @@ export default class TabTextureColor extends Vue {
 
   isSameImage(a: any, b: any): boolean {
     if (!a || !b) return false
+    if (typeof a.imageIndex === 'number' && typeof b.imageIndex === 'number') {
+      return a.imageIndex === b.imageIndex
+    }
     return a.index === b.index && a.name === b.name
   }
 
@@ -710,9 +724,6 @@ export default class TabTextureColor extends Vue {
     const idx = this.selectedImages.findIndex(i => this.isSameImage(i, img))
     if (idx !== -1) {
       this.selectedImages.splice(idx, 1)
-      if (this.selectedImages.length > 0 && this.activeImage && this.isSameImage(this.activeImage, img)) {
-        this.setActiveImage(this.selectedImages[0])
-      }
     } else {
       this.selectedImages.push(img)
       if (!this.activeImage) {
@@ -728,12 +739,7 @@ export default class TabTextureColor extends Vue {
   // 全て選択 / 選択解除
   toggleSelectAll() {
     if (this.isAllSelected) {
-      if (this.activeImage) {
-        this.selectedImages = [this.activeImage]
-      } else if (this.vrmImages.length > 0) {
-        this.selectedImages = [this.vrmImages[0]]
-        this.setActiveImage(this.vrmImages[0])
-      }
+      this.selectedImages = []
     } else {
       this.selectedImages = [...this.vrmImages]
       if (!this.activeImage && this.selectedImages.length > 0) {
@@ -741,6 +747,14 @@ export default class TabTextureColor extends Vue {
       }
     }
 
+    if (this.enable3DPreview && this.hasChanges) {
+      this.schedule3DPreview()
+    }
+  }
+
+  // 選択解除
+  deselectAll() {
+    this.selectedImages = []
     if (this.enable3DPreview && this.hasChanges) {
       this.schedule3DPreview()
     }
