@@ -4,6 +4,7 @@
     <div id="tab">
       <ul class="tabMenu">
         <li :class="{ active: selectTabType === 'tab_images' }" @click="clickSelectTab('tab_images')">{{$t('tabImages')}}</li>
+        <li :class="{ active: selectTabType === 'tab_texture_color' }" @click="clickSelectTab('tab_texture_color')">{{$t('tabTextureColor')}}</li>
         <li :class="{ active: selectTabType === 'tab_materials' }" @click="clickSelectTab('tab_materials')">{{$t('tabMaterials')}}</li>
         <li :class="{ active: selectTabType === 'tab_first_person' }" @click="clickSelectTab('tab_first_person')">{{$t('tabFirstPerson')}}</li>
         <li :class="{ active: selectTabType === 'tab_meta' }" @click="clickSelectTab('tab_meta')">{{$t('tabMeta')}}</li>
@@ -17,6 +18,7 @@
       </ul>
     </div>
     <TabImages :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" :vrmVersion="vrmVersion" />
+    <TabTextureColor ref="tabTextureColor" :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" :vrmVersion="vrmVersion" :json="json" @preview-texture="onPreviewTexture" @reset-texture-preview="onResetTexturePreview" />
     <TabFirstPerson ref="tabFirstPerson" :selectTabType="selectTabType" :firstPerson="firstPerson" :vrmScale="vrmScale" :drawVrm="drawVrm" :vrmVersion="vrmVersion" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" />
     <TabVroid :selectTabType="selectTabType" :springBoneSkirt="springBoneSkirt" />
     <TabShortVideo :selectTabType="selectTabType" />
@@ -33,6 +35,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator'
 import VRMParser from '@/module/VRMParser'
 
 import TabImages from '@/components/VRMParserViewTabs/TabImages.vue'
+import TabTextureColor from '@/components/VRMParserViewTabs/TabTextureColor.vue'
 import TabFirstPerson from '@/components/VRMParserViewTabs/TabFirstPerson.vue'
 import TabVroid from '@/components/VRMParserViewTabs/TabVroid.vue'
 import TabShortVideo from '@/components/VRMParserViewTabs/TabShortVideo.vue'
@@ -45,6 +48,7 @@ import TabAccessory from '@/components/VRMParserViewTabs/TabAccessory.vue'
 @Component({
   components: {
     TabImages,
+    TabTextureColor,
     TabFirstPerson,
     TabVroid,
     TabShortVideo,
@@ -237,6 +241,14 @@ export default class VRMParserView extends Vue {
 
   onPreviewMaterialOutlineMode(payload: { materialIndex: number, materialName: string, mode: 'none' | 'worldCoordinates' | 'screenCoordinates' }) {
     this.$emit('preview-material-outline-mode', payload);
+  }
+
+  onPreviewTexture(payload: { imageIndex: number, canvas: HTMLCanvasElement }) {
+    this.$emit('preview-texture', payload);
+  }
+
+  onResetTexturePreview(imageIndex?: number) {
+    this.$emit('reset-texture-preview', imageIndex);
   }
 
   onLoadAccessory(payload: any) {

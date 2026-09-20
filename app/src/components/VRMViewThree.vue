@@ -635,6 +635,211 @@ export default class VRMViewThree extends Vue {
     this.render();
   }
 
+  // テクスチャの色調変更をリアルタイムプレビュー（単一または複数）
+  previewTexture = (
+    payload: any,
+    canvasArg?: HTMLCanvasElement
+  ) => {
+    if (!this.gltf || !this.gltf.scene) return;
+
+    let items: Array<{ imageIndex: number; canvas: HTMLCanvasElement }> = [];
+    if (typeof payload === 'number' && canvasArg) {
+      items = [{ imageIndex: payload, canvas: canvasArg }];
+    } else if (Array.isArray(payload)) {
+      items = payload.filter((item: any) => item && typeof item.imageIndex === 'number' && item.canvas);
+    } else if (payload && typeof payload.imageIndex === 'number' && payload.canvas) {
+      items = [payload];
+    }
+
+    if (items.length === 0) return;
+
+    const parser = this.gltf.parser;
+
+    items.forEach(({ imageIndex, canvas }) => {
+      // 1. 対象の imageIndex を参照する textureIndex を収集
+      const targetTextureIndices = new Set<number>();
+      if (VRMParser.json?.textures) {
+        VRMParser.json.textures.forEach((tex: any, idx: number) => {
+          if (tex.source === imageIndex) {
+            targetTextureIndices.add(idx);
+          }
+        });
+      }
+
+      // 2. 対象テクスチャを使用しているマテリアル名およびマテリアルインデックスを収集
+      const targetMaterialNames = new Set<string>();
+      const targetMaterialIndices = new Set<number>();
+
+      if (VRMParser.json?.materials) {
+        VRMParser.json.materials.forEach((mat: any, mIdx: number) => {
+          let usesTarget = false;
+
+          // glTF 2.0 pbrMetallicRoughness
+          const baseTex = mat.pbrMetallicRoughness?.baseColorTexture?.index;
+          if (typeof baseTex === 'number' && targetTextureIndices.has(baseTex)) {
+            usesTarget = true;
+          }
+
+          // VRM 0.x textureProperties
+          if (!usesTarget && mat.textureProperties) {
+            Object.values(mat.textureProperties).forEach((tIdx: any) => {
+              if (typeof tIdx === 'number' && targetTextureIndices.has(tIdx)) usesTarget = true;
+            });
+          }
+
+          // VRM 0.x extension
+          const vrm0MatProps = VRMParser.json.extensions?.VRM?.materialProperties;
+          if (!usesTarget && Array.isArray(vrm0MatProps)) {
+            const vrmMat = vrm0MatProps[mIdx] || vrm0MatProps.find((p: any) => p.name === mat.name);
+            if (vrmMat?.textureProperties) {
+              Object.values(vrmMat.textureProperties).forEach((tIdx: any) => {
+                if (typeof tIdx === 'number' && targetTextureIndices.has(tIdx)) usesTarget = true;
+              });
+            }
+          }
+
+          // VRM 1.0 VRMC_materials_mtoon
+          const mtoon = mat.extensions?.VRMC_materials_mtoon;
+          if (!usesTarget && mtoon) {
+            const mtoonProps = [
+              'shadeMultiplyTexture',
+              'outlineWidthMultiplyTexture',
+              'rimMultiplyTexture',
+              'matcapTexture',
+              'uvAnimationMaskTexture'
+            ];
+            mtoonProps.forEach((prop) => {
+              const tIdx = mtoon[prop]?.index;
+              if (typeof tIdx === 'number' && targetTextureIndices.has(tIdx)) usesTarget = true;
+            });
+          }
+
+          if (usesTarget) {
+            targetMaterialIndices.add(mIdx);
+            if (mat.name) targetMaterialNames.add(mat.name);
+          }
+        });
+      }
+
+      // 3. Three.jsシーンを走査してテクスチャを置換
+      this.gltf.scene.traverse((child: any) => {
+        if (!child.isMesh || !child.material) return;
+
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach((mat: any) => {
+          const baseMatName = mat.name ? mat.name.replace(/\s*\(Outline\)$/, '') : '';
+          const assocMat = parser?.associations?.get(mat);
+          const isTargetMat =
+            targetMaterialNames.has(baseMatName) ||
+            (assocMat && (targetMaterialIndices.has(assocMat.material) || targetMaterialIndices.has(assocMat.materials)));
+
+          const textureProps = [
+            'map',
+            'shadeMultiplyTexture',
+            'outlineWidthMultiplyTexture',
+            'rimMultiplyTexture',
+            'matcapTexture',
+            'emissiveMap'
+          ];
+
+          let matTextureUpdated = false;
+
+          textureProps.forEach((prop) => {
+            const tex = mat[prop];
+            if (!tex || !tex.isTexture) return;
+
+            let isMatch = false;
+
+            // associationsからの照合
+            if (parser?.associations) {
+              const assoc = parser.associations.get(tex);
+              if (assoc && typeof assoc.textures === 'number' && targetTextureIndices.has(assoc.textures)) {
+                isMatch = true;
+              }
+            }
+
+            // マテリアルからの照合（map / shadeMultiplyTexture）
+            if (!isMatch && isTargetMat && (prop === 'map' || prop === 'shadeMultiplyTexture')) {
+              isMatch = true;
+            }
+
+            // 既にこの画像インデックスでプレビュー適用済みのテクスチャ
+            if (!isMatch && (tex as any)._targetImageIndex === imageIndex) {
+              isMatch = true;
+            }
+
+            if (isMatch) {
+              if (!(tex as any)._originalImage) {
+                (tex as any)._originalImage = tex.image;
+                (tex as any)._targetImageIndex = imageIndex;
+              }
+              tex.image = canvas;
+              tex.needsUpdate = true;
+              matTextureUpdated = true;
+            }
+          });
+
+          if (matTextureUpdated) {
+            mat.needsUpdate = true;
+          }
+        });
+      });
+    });
+
+    this.render();
+  };
+
+  // テクスチャのリアルタイムプレビューを元に戻す（単一、複数、または全解除）
+  resetTexturePreview = (imageIndex?: number | number[]) => {
+    if (!this.gltf || !this.gltf.scene) return;
+
+    const targetIndices = typeof imageIndex === 'number'
+      ? [imageIndex]
+      : Array.isArray(imageIndex)
+        ? imageIndex
+        : null;
+
+    this.gltf.scene.traverse((child: any) => {
+      if (!child.isMesh || !child.material) return;
+
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach((mat: any) => {
+        const textureProps = [
+          'map',
+          'shadeMultiplyTexture',
+          'outlineWidthMultiplyTexture',
+          'rimMultiplyTexture',
+          'matcapTexture',
+          'emissiveMap'
+        ];
+
+        let matTextureRestored = false;
+
+        textureProps.forEach((prop) => {
+          const tex = mat[prop];
+          if (!tex || !tex.isTexture) return;
+
+          if ((tex as any)._originalImage) {
+            const currentImgIdx = (tex as any)._targetImageIndex;
+            if (targetIndices === null || targetIndices.includes(currentImgIdx)) {
+              tex.image = (tex as any)._originalImage;
+              tex.needsUpdate = true;
+              delete (tex as any)._originalImage;
+              delete (tex as any)._targetImageIndex;
+              matTextureRestored = true;
+            }
+          }
+        });
+
+        if (matTextureRestored) {
+          mat.needsUpdate = true;
+        }
+      });
+    });
+
+    this.render();
+  };
+
   // 動的エクスプレッションの登録（新規追加したブレンドシェイプを即時プレビュー）
   registerCustomExpression = async (name: string, binds: any[]) => {
     if (!this.gltf || !this.gltf.userData.vrm) return;
