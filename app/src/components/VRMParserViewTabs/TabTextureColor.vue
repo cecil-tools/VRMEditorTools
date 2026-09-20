@@ -677,9 +677,23 @@ export default class TabTextureColor extends Vue {
         this.selectedImages = validSelected
         if (!this.activeImage || !newVal.some(img => this.isSameImage(this.activeImage, img))) {
           this.setActiveImage(this.selectedImages[0])
+        } else {
+          const updatedActive = newVal.find(img => this.isSameImage(this.activeImage, img))
+          if (updatedActive) {
+            this.setActiveImage(updatedActive)
+          }
         }
       } else {
-        this.selectSingleImage(newVal[0])
+        if (!this.activeImage) {
+          this.selectSingleImage(newVal[0])
+        } else {
+          const updatedActive = newVal.find(img => this.isSameImage(this.activeImage, img))
+          if (updatedActive) {
+            this.setActiveImage(updatedActive)
+          } else {
+            this.selectSingleImage(newVal[0])
+          }
+        }
       }
     } else {
       this.selectedImages = []
@@ -693,7 +707,7 @@ export default class TabTextureColor extends Vue {
     if (newTab === 'tab_texture_color') {
       this.$nextTick(() => {
         this.drawColorWheel()
-        if (this.selectedImages.length === 0 && this.vrmImages && this.vrmImages.length > 0) {
+        if (!this.activeImage && this.vrmImages && this.vrmImages.length > 0) {
           this.selectSingleImage(this.vrmImages[0])
         } else if (this.activeImage) {
           this.renderAdjustedImage()
@@ -1371,6 +1385,11 @@ export default class TabTextureColor extends Vue {
 
       const appliedCount = this.selectedImages.length
 
+      // VRM適用完了後、テクスチャの選択を解除しパラメータをリセット
+      this.selectedImages = []
+      this.resetParametersInternal()
+      this.hasChanges = false
+
       // 画像一覧を再パースして更新
       await new Promise<void>(resolve => {
         VRMParser.parse(newVrmFile, (_json: any, images: any[]) => {
@@ -1393,10 +1412,6 @@ export default class TabTextureColor extends Vue {
         this.drawVrm(newVrmFile)
       }
 
-      // VRM適用完了後、テクスチャの選択を解除しパラメータをリセット
-      this.selectedImages = []
-      this.resetParametersInternal()
-      this.hasChanges = false
       alert(this.$t('textureColor.appliedMultiSuccess', { count: appliedCount }) as string)
     } catch (err) {
       console.error('applyToVRM error', err)
