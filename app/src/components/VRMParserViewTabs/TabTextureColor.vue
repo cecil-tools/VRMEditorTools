@@ -1369,23 +1369,20 @@ export default class TabTextureColor extends Vue {
       // VRMファイルを再生成
       const newVrmFile = await VRMParser.createVRMFile()
 
+      const appliedCount = this.selectedImages.length
+
       // 画像一覧を再パースして更新
       await new Promise<void>(resolve => {
         VRMParser.parse(newVrmFile, (_json: any, images: any[]) => {
           this.vrmImages.splice(0, this.vrmImages.length)
           this.vrmImages.push(...images)
 
-          // 選択中画像リストおよびアクティブ画像の参照を更新
-          const updatedSelected: any[] = []
-          for (const sel of this.selectedImages) {
-            const found = images.find(img => img.name === sel.name)
-            if (found) updatedSelected.push(found)
-          }
-          this.selectedImages = updatedSelected
-
+          // アクティブ画像の参照を更新
           if (this.activeImage) {
             const foundActive = images.find(img => img.name === this.activeImage.name)
-            if (foundActive) this.activeImage = foundActive
+            if (foundActive) {
+              this.setActiveImage(foundActive)
+            }
           }
           resolve()
         })
@@ -1396,8 +1393,11 @@ export default class TabTextureColor extends Vue {
         this.drawVrm(newVrmFile)
       }
 
+      // VRM適用完了後、テクスチャの選択を解除しパラメータをリセット
+      this.selectedImages = []
+      this.resetParametersInternal()
       this.hasChanges = false
-      alert(this.$t('textureColor.appliedMultiSuccess', { count: this.selectedImages.length }) as string)
+      alert(this.$t('textureColor.appliedMultiSuccess', { count: appliedCount }) as string)
     } catch (err) {
       console.error('applyToVRM error', err)
       alert('適用エラー: ' + err)
