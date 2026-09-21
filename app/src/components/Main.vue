@@ -1,8 +1,8 @@
 <template>
   <div class="main">
-    <div class="container vrmviewContainer">
+    <div class="container vrmviewContainer" @dragover.prevent @drop.prevent="onContainerDrop">
       <FileUpload :changeFile="changeFile" />
-      <VRMView ref="vrmview" :path="path" :debug="false" @change-first-person-offset="onChangeFirstPersonFromGizmo" @change-accessory-transform-from-gizmo="onChangeAccessoryTransformFromGizmo" />
+      <VRMView ref="vrmview" :path="path" :debug="false" @change-first-person-offset="onChangeFirstPersonFromGizmo" @change-accessory-transform-from-gizmo="onChangeAccessoryTransformFromGizmo" @motion-time-update="onMotionTimeUpdate" @motion-state-change="onMotionStateChange" />
       <div>
         <label for="btnExport">{{$t('btnExport')}}</label>
         <input id="btnExport" type="button" @click="clickExport" />
@@ -13,7 +13,7 @@
       </div>
     </div>
     <div class="container vrmparserContainer">
-      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" @preview-material-outline-width="onPreviewMaterialOutlineWidth" @preview-material-outline-mode="onPreviewMaterialOutlineMode" @preview-texture="onPreviewTexture" @reset-texture-preview="onResetTexturePreview" @load-accessory="onLoadAccessory" @select-accessory="onSelectAccessory" @toggle-accessory-visibility="onToggleAccessoryVisibility" @remove-accessory="onRemoveAccessory" @focus-accessory="onFocusAccessory" @change-accessory-bone="onChangeAccessoryBone" @change-accessory-mode="onChangeAccessoryMode" @change-accessory-transform="onChangeAccessoryTransform" @activate-accessory-mode="onActivateAccessoryMode" @merge-accessories-to-vrm="onMergeAccessoriesToVRM" />
+      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" :motionInfo="motionInfo" :isMotionPlaying="isMotionPlaying" :motionCurrentTime="motionCurrentTime" :motionDuration="motionDuration" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" @preview-material-outline-width="onPreviewMaterialOutlineWidth" @preview-material-outline-mode="onPreviewMaterialOutlineMode" @preview-texture="onPreviewTexture" @reset-texture-preview="onResetTexturePreview" @load-accessory="onLoadAccessory" @select-accessory="onSelectAccessory" @toggle-accessory-visibility="onToggleAccessoryVisibility" @remove-accessory="onRemoveAccessory" @focus-accessory="onFocusAccessory" @change-accessory-bone="onChangeAccessoryBone" @change-accessory-mode="onChangeAccessoryMode" @change-accessory-transform="onChangeAccessoryTransform" @activate-accessory-mode="onActivateAccessoryMode" @merge-accessories-to-vrm="onMergeAccessoriesToVRM" @load-vrma="onLoadVRMA" @play-motion="onPlayMotion" @pause-motion="onPauseMotion" @stop-motion="onStopMotion" @seek-motion="onSeekMotion" @set-motion-speed="onSetMotionSpeed" @set-motion-loop="onSetMotionLoop" @reset-motion-pose="onResetMotionPose" />
     </div>
 </div>
 </template>
@@ -38,6 +38,12 @@ export default class Main extends Vue {
 
   // アップロードされたファイル
   selectVrmFile?: File | null = null
+
+  // モーション管理ステート
+  motionInfo: { fileName: string; duration: number; trackCount: number } | null = null;
+  isMotionPlaying = false;
+  motionCurrentTime = 0;
+  motionDuration = 0;
 
   mounted() {
     // VRM 読み込み
@@ -365,6 +371,104 @@ export default class Main extends Vue {
       await VRMParser.mergeAccessories(accessories);
     } catch (e) {
       console.error('Failed to merge accessories to VRM', e);
+    }
+  }
+
+  // ===== モーション（VRMA）操作連携 =====
+
+  onContainerDrop(e: DragEvent) {
+    if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      const lowerName = file.name.toLowerCase();
+      if (lowerName.endsWith('.vrma')) {
+        this.onLoadVRMA(file);
+      } else if (lowerName.endsWith('.vrm')) {
+        this.selectVrmFile = file;
+        this.drawVrm(file);
+      }
+    }
+  }
+
+  async onLoadVRMA(file: File) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.loadVRMA) {
+      try {
+        const info = await vrmview.loadVRMA(file);
+        this.motionInfo = info;
+        this.motionDuration = info.duration;
+        this.motionCurrentTime = 0;
+        this.isMotionPlaying = true;
+        vrmview.playMotion();
+      } catch (e: any) {
+        console.error('Failed to load VRMA', e);
+        alert(this.$t('motion.loadError') + (e?.message || e));
+      }
+    }
+  }
+
+  onPlayMotion() {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.playMotion) {
+      vrmview.playMotion();
+    }
+  }
+
+  onPauseMotion() {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.pauseMotion) {
+      vrmview.pauseMotion();
+    }
+  }
+
+  onStopMotion() {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.stopMotion) {
+      vrmview.stopMotion();
+    }
+  }
+
+  onSeekMotion(time: number) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.seekMotion) {
+      vrmview.seekMotion(time);
+      this.motionCurrentTime = time;
+    }
+  }
+
+  onSetMotionSpeed(speed: number) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.setMotionSpeed) {
+      vrmview.setMotionSpeed(speed);
+    }
+  }
+
+  onSetMotionLoop(loop: boolean) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.setMotionLoop) {
+      vrmview.setMotionLoop(loop);
+    }
+  }
+
+  onResetMotionPose() {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.resetMotionPose) {
+      vrmview.resetMotionPose();
+      this.isMotionPlaying = false;
+      this.motionCurrentTime = 0;
+    }
+  }
+
+  onMotionTimeUpdate(payload: { currentTime: number; duration: number }) {
+    this.motionCurrentTime = payload.currentTime;
+    if (payload.duration) {
+      this.motionDuration = payload.duration;
+    }
+  }
+
+  onMotionStateChange(payload: { isPlaying: boolean; currentTime?: number }) {
+    this.isMotionPlaying = payload.isPlaying;
+    if (payload.currentTime !== undefined) {
+      this.motionCurrentTime = payload.currentTime;
     }
   }
 }

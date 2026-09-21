@@ -284,5 +284,27 @@ export default {
         hideColorWheel: '色相環を非表示',
         applyShort: '適用 ({count})',
         downloadShort: '保存',
+    },
+
+    tabMotion: 'モーション',
+
+    // モーション (VRMA)
+    motion: {
+        title: 'モーション再生 (VRMA)',
+        description: 'VRMA (VRM Animation / .vrma) ファイルを読み込んでモデルを動かします',
+        selectFile: 'VRMAファイルを選択',
+        dragDropHint: 'またはここに .vrma ファイルをドラッグ＆ドロップ',
+        loadedMotion: '読み込み中のモーション',
+        fileName: 'ファイル名',
+        duration: '再生時間',
+        trackCount: 'トラック数',
+        play: '再生',
+        pause: '一時停止',
+        stop: '停止',
+        resetPose: 'ポーズリセット',
+        loop: 'ループ再生',
+        playbackSpeed: '再生速度',
+        noMotion: 'VRMAファイルが読み込まれていません',
+        loadError: 'VRMAファイルの読み込みに失敗しました: ',
     }
 }

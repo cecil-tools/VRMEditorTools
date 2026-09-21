@@ -12,6 +12,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { VRMLoaderPlugin, VRMExpression, VRMExpressionMorphTargetBind } from '@pixiv/three-vrm';
+import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
 import JSZip from 'jszip';
 
 import VRMParser from '@/module/VRMParser'
@@ -37,6 +38,17 @@ export default class VRMViewThree extends Vue {
   accessoriesMap: Map<string, { id: string; object: any; boneNode: any; item: any }> = new Map();
   activeAccessoryId: string | null = null;
   accessoryTransformControls: any | null = null;
+
+  // モーション（VRMA）管理
+  currentMixer: any | null = null;
+  currentAction: any | null = null;
+  currentClip: any | null = null;
+  currentVrmAnimation: any | null = null;
+  currentVrmaFileName = '';
+  clock = new THREE.Clock();
+  isMotionPlaying = false;
+  isMotionLoop = true;
+  motionPlaybackSpeed = 1.0;
 
   _engine: any = null
 
@@ -114,12 +126,34 @@ export default class VRMViewThree extends Vue {
 
     this.initTransformControls(canvas);
 
+    // VRM & VRMA ローダープラグイン登録
+    this.loader.register((parser: any) => new VRMLoaderPlugin(parser));
+    this.loader.register((parser: any) => new VRMAnimationLoaderPlugin(parser));
+
     this.update();
   }
 
   //フレーム更新
   update = () => {
       requestAnimationFrame(this.update);
+
+      const delta = this.clock.getDelta();
+      const safeDelta = Math.min(delta, 0.1);
+
+      if (this.currentMixer && this.isMotionPlaying) {
+        this.currentMixer.update(safeDelta);
+        if (this.currentAction) {
+          this.$emit('motion-time-update', {
+            currentTime: this.currentAction.time,
+            duration: this.currentClip ? this.currentClip.duration : 0
+          });
+        }
+      }
+
+      if (this.gltf && this.gltf.userData && this.gltf.userData.vrm) {
+        this.gltf.userData.vrm.update(safeDelta);
+      }
+
       if (this.skeletonHelper && this.skeletonHelper.visible) {
         this.skeletonHelper.update();
       }
@@ -153,6 +187,14 @@ export default class VRMViewThree extends Vue {
         this.scene.remove(this.gltf.scene);
       }
 
+      // 既存ミキサー停止
+      if (this.currentMixer) {
+        this.currentMixer.stopAllAction();
+        this.currentMixer = null;
+        this.currentAction = null;
+        this.currentClip = null;
+      }
+
       // VRM ファイルを読み込む
       var path = null;
       if (sceneFilename instanceof File) {
@@ -163,9 +205,6 @@ export default class VRMViewThree extends Vue {
       }
       console.log('path', path)
 
-      this.loader.register((parser: any) => {
-        return new VRMLoaderPlugin(parser);
-      });
       this.loader.load(
         path,
         (gltf: any) => {
@@ -173,6 +212,12 @@ export default class VRMViewThree extends Vue {
           // VRM モデルをシーンに追加
           this.scene.add(gltf.scene)
           this.gltf = gltf;
+
+          // ロード済みモーションがあれば再バインド
+          if (this.currentVrmAnimation && gltf.userData && gltf.userData.vrm) {
+            this.applyVrmAnimationToVrm(this.currentVrmAnimation, gltf.userData.vrm);
+          }
+
           // this.render();
           resolve();
         },
@@ -1536,6 +1581,142 @@ export default class VRMViewThree extends Vue {
     });
     this.accessoriesMap.clear();
     this.activeAccessoryId = null;
+  }
+
+  // ===== モーション（VRMA）管理・操作メソッド =====
+
+  // VRMA ファイルを読み込み
+  public loadVRMA = async (file: File | string): Promise<{ fileName: string; duration: number; trackCount: number }> => {
+    let path: string;
+    let fileName = '';
+    if (file instanceof File) {
+      path = URL.createObjectURL(file);
+      fileName = file.name;
+    } else {
+      path = file;
+      fileName = file.split('/').pop() || 'motion.vrma';
+    }
+    this.currentVrmaFileName = fileName;
+
+    const gltf = await this.loader.loadAsync(path);
+    const vrmAnimations = gltf.userData.vrmAnimations;
+    if (!vrmAnimations || vrmAnimations.length === 0) {
+      throw new Error('No VRM Animation found in file');
+    }
+    const vrmAnimation = vrmAnimations[0];
+    this.currentVrmAnimation = vrmAnimation;
+
+    if (this.gltf && this.gltf.userData && this.gltf.userData.vrm) {
+      this.applyVrmAnimationToVrm(vrmAnimation, this.gltf.userData.vrm);
+    }
+
+    const duration = this.currentClip ? this.currentClip.duration : (vrmAnimation.duration || 0);
+    const trackCount = this.currentClip ? this.currentClip.tracks.length : 0;
+
+    return { fileName, duration, trackCount };
+  }
+
+  // VRMAnimation を VRM モデルに適用
+  public applyVrmAnimationToVrm = (vrmAnimation: any, vrm: any) => {
+    if (this.currentMixer) {
+      this.currentMixer.stopAllAction();
+    }
+    const clip = createVRMAnimationClip(vrmAnimation, vrm);
+    this.currentClip = clip;
+    this.currentMixer = new THREE.AnimationMixer(vrm.scene);
+    this.currentAction = this.currentMixer.clipAction(clip);
+    this.currentAction.setLoop(this.isMotionLoop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
+    this.currentAction.clampWhenFinished = true;
+    this.currentAction.timeScale = this.motionPlaybackSpeed;
+
+    this.currentMixer.addEventListener('finished', () => {
+      this.isMotionPlaying = false;
+      this.$emit('motion-state-change', {
+        isPlaying: false,
+        currentTime: this.currentClip ? this.currentClip.duration : 0,
+      });
+    });
+
+    if (this.isMotionPlaying) {
+      this.currentAction.play();
+    }
+  }
+
+  // モーション再生
+  public playMotion = () => {
+    if (!this.currentAction || !this.currentMixer) return;
+    if (!this.isMotionPlaying) {
+      if (!this.isMotionLoop && this.currentClip && this.currentAction.time >= this.currentClip.duration) {
+        this.currentAction.time = 0;
+      }
+      this.currentAction.paused = false;
+      this.currentAction.play();
+      this.isMotionPlaying = true;
+      this.$emit('motion-state-change', { isPlaying: true });
+    }
+  }
+
+  // モーション一時停止
+  public pauseMotion = () => {
+    if (!this.currentAction) return;
+    this.currentAction.paused = true;
+    this.isMotionPlaying = false;
+    this.$emit('motion-state-change', { isPlaying: false });
+  }
+
+  // モーション停止
+  public stopMotion = () => {
+    if (this.currentAction) {
+      this.currentAction.stop();
+      this.currentAction.time = 0;
+    }
+    this.isMotionPlaying = false;
+    this.resetMotionPose();
+    this.$emit('motion-state-change', { isPlaying: false, currentTime: 0 });
+  }
+
+  // シーク位置変更
+  public seekMotion = (time: number) => {
+    if (!this.currentMixer || !this.currentAction) return;
+    const clampedTime = Math.max(0, Math.min(time, this.currentClip ? this.currentClip.duration : time));
+    this.currentMixer.setTime(clampedTime);
+    this.currentAction.time = clampedTime;
+    if (this.gltf && this.gltf.userData && this.gltf.userData.vrm) {
+      this.gltf.userData.vrm.update(0);
+    }
+  }
+
+  // 再生速度設定
+  public setMotionSpeed = (speed: number) => {
+    this.motionPlaybackSpeed = speed;
+    if (this.currentAction) {
+      this.currentAction.timeScale = speed;
+    }
+  }
+
+  // ループ設定
+  public setMotionLoop = (loop: boolean) => {
+    this.isMotionLoop = loop;
+    if (this.currentAction) {
+      this.currentAction.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
+    }
+  }
+
+  // ポーズを初期姿勢（T-Pose/Rest Pose）にリセット
+  public resetMotionPose = () => {
+    if (!this.gltf || !this.gltf.userData || !this.gltf.userData.vrm) return;
+    const vrm = this.gltf.userData.vrm;
+    if (vrm.humanoid) {
+      vrm.humanoid.resetNormalizedPose();
+    }
+    if (vrm.expressionManager) {
+      vrm.expressionManager.expressions.forEach((exp: any) => {
+        exp.clearAppliedWeight();
+      });
+      vrm.expressionManager.update();
+    }
+    vrm.update(0);
+    this.render();
   }
 }
 </script>
