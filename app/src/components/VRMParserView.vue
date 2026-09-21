@@ -354,9 +354,18 @@ export default class VRMParserView extends Vue {
   $green: #007db9;
   $white: #fff;
 
+  .vrmparserview {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
   #tab {
     width: 100%;
     max-width: 600px;
+    box-sizing: border-box;
 
     .tabMenu {
       display: flex;

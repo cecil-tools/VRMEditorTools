@@ -21,15 +21,6 @@
           >
             {{ $t('textureColor.deselectAll') }}
           </button>
-          <button
-            type="button"
-            class="btn-tool-mini btn-toggle-simple"
-            :class="{ active: isSimpleView }"
-            @click="toggleSimpleView"
-            :title="isSimpleView ? $t('textureColor.detailView') : $t('textureColor.simpleView')"
-          >
-            {{ isSimpleView ? '⚡ ' + $t('textureColor.simpleView') : '⚙️ ' + $t('textureColor.detailView') }}
-          </button>
         </div>
       </div>
 
@@ -65,22 +56,22 @@
       </div>
     </div>
 
-    <!-- モバイル用ナビゲーション切り替えバー (幅768px以下で表示) -->
-    <div class="mobile-nav-bar" v-if="activeImage">
-      <div class="mobile-tab-group">
+    <!-- ナビゲーション切り替えバー (調整 / プレビュー) -->
+    <div class="editor-nav-bar mobile-nav-bar" v-if="activeImage">
+      <div class="editor-tab-group mobile-tab-group">
         <button
           type="button"
-          class="mobile-tab-btn"
+          class="editor-tab-btn mobile-tab-btn"
           :class="{ active: mobileActiveTab === 'adjust' }"
-          @click="mobileActiveTab = 'adjust'"
+          @click="selectEditorTab('adjust')"
         >
           🎨 {{ $t('textureColor.tabAdjust') }}
         </button>
         <button
           type="button"
-          class="mobile-tab-btn"
+          class="editor-tab-btn mobile-tab-btn"
           :class="{ active: mobileActiveTab === 'preview' }"
-          @click="mobileActiveTab = 'preview'"
+          @click="selectEditorTab('preview')"
         >
           👁️ {{ $t('textureColor.tabPreview') }}
         </button>
@@ -95,16 +86,18 @@
       </button>
     </div>
 
-    <!-- メインエリア: コントロールパネル + プレビューパネル -->
+    <!-- メインエリア: コントロールパネル / プレビューパネル -->
     <div
       class="color-editor-main"
       v-if="activeImage"
       :class="{
+        'show-adjust': mobileActiveTab === 'adjust',
+        'show-preview': mobileActiveTab === 'preview',
         'mobile-show-adjust': mobileActiveTab === 'adjust',
         'mobile-show-preview': mobileActiveTab === 'preview'
       }"
     >
-      <!-- 左側: 色調調整コントロールパネル -->
+      <!-- コントロールパネル -->
       <div class="controls-panel" :class="{ 'is-simple': isSimpleView }">
         <!-- 選択中テクスチャ情報 -->
         <div class="section-card texture-info-card" :class="{ 'compact-info': isSimpleView }">
@@ -555,6 +548,16 @@ export default class TabTextureColor extends Vue {
     if (this.showColorWheelInSimple) {
       this.$nextTick(() => {
         this.drawColorWheel()
+      })
+    }
+  }
+
+  selectEditorTab(tab: 'adjust' | 'preview') {
+    this.mobileActiveTab = tab
+    if (tab === 'preview') {
+      this.$nextTick(() => {
+        this.renderAdjustedImage()
+        this.zoomFit()
       })
     }
   }
@@ -1453,11 +1456,13 @@ $text-sub: #64748b;
 .tabTextureColor {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  max-width: 100%;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
   box-sizing: border-box;
   background: #f1f5f9;
   overflow-x: hidden;
+  border-radius: 0 0 6px 6px;
 }
 
 /* 上部テクスチャセレクタ */
@@ -1466,6 +1471,9 @@ $text-sub: #64748b;
   border-bottom: 1px solid $border-color;
   padding: 8px 12px;
   flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 
   .selector-header {
     display: flex;
@@ -1532,6 +1540,9 @@ $text-sub: #64748b;
     overflow-x: auto;
     padding-bottom: 4px;
     -webkit-overflow-scrolling: touch;
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
 
     &::-webkit-scrollbar {
       height: 6px;
@@ -1633,22 +1644,28 @@ $text-sub: #64748b;
   }
 }
 
-/* モバイルナビゲーションバー (幅768px以下で表示) */
+/* ナビゲーションバー (調整 / プレビュー切り替え) */
+.editor-nav-bar,
 .mobile-nav-bar {
-  display: none;
+  display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 6px 10px;
   background: #0f172a;
   border-bottom: 1px solid #334155;
   gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
 
+  .editor-tab-group,
   .mobile-tab-group {
     display: flex;
     gap: 4px;
 
+    .editor-tab-btn,
     .mobile-tab-btn {
-      padding: 5px 12px;
+      padding: 5px 14px;
       font-size: 12px;
       font-weight: 600;
       color: #94a3b8;
@@ -1657,6 +1674,11 @@ $text-sub: #64748b;
       border-radius: 4px;
       cursor: pointer;
       transition: all 0.15s;
+
+      &:hover:not(.active) {
+        background: #334155;
+        color: #f1f5f9;
+      }
 
       &.active {
         background: $primary;
@@ -1675,6 +1697,11 @@ $text-sub: #64748b;
     border: 1px solid #475569;
     border-radius: 4px;
     cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover {
+      background: #475569;
+    }
 
     &.active {
       background: #f59e0b;
@@ -1687,17 +1714,50 @@ $text-sub: #64748b;
 /* メインエリア */
 .color-editor-main {
   display: flex;
-  flex: 1;
-  overflow: hidden;
+  flex-direction: column;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  &.show-adjust,
+  &.mobile-show-adjust {
+    .controls-panel {
+      display: flex;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      border-right: none;
+    }
+    .preview-panel {
+      display: none;
+    }
+  }
+
+  &.show-preview,
+  &.mobile-show-preview {
+    .controls-panel {
+      display: none;
+    }
+    .preview-panel {
+      display: flex;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      height: 480px;
+      min-height: 440px;
+    }
+  }
 }
 
-/* 左側コントロールパネル */
+/* コントロールパネル */
 .controls-panel {
-  width: 320px;
-  min-width: 320px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   background: #ffffff;
-  border-right: 1px solid $border-color;
+  border-right: none;
   overflow-y: auto;
   padding: 12px;
   display: flex;
@@ -2091,12 +2151,16 @@ $text-sub: #64748b;
 
 /* 右側プレビューパネル */
 .preview-panel {
-  flex: 1;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: #1e293b;
-  min-width: 0;
+  height: 480px;
+  min-height: 440px;
+  box-sizing: border-box;
 }
 
 .preview-toolbar {
@@ -2108,11 +2172,14 @@ $text-sub: #64748b;
   border-bottom: 1px solid #334155;
   color: #ffffff;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 6px;
 
   .toolbar-left {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
 
     .toolbar-title {
       font-size: 13px;
@@ -2154,7 +2221,7 @@ $text-sub: #64748b;
   .toolbar-right {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
 
     .btn-tool-mini {
       padding: 3px 8px;
@@ -2396,69 +2463,8 @@ $text-sub: #64748b;
    レスポンシブ・スマホ向け調整 (768px以下 / 480px以下)
    ========================================================= */
 @media screen and (max-width: 768px) {
-  .mobile-nav-bar {
-    display: flex;
-  }
-
-  .color-editor-main {
-    flex-direction: column;
-
-    &.mobile-show-adjust {
-      .controls-panel {
-        display: flex;
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-        flex: 1;
-        border-right: none;
-      }
-      .preview-panel {
-        display: none;
-      }
-    }
-
-    &.mobile-show-preview {
-      .controls-panel {
-        display: none;
-      }
-      .preview-panel {
-        display: flex;
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-        flex: 1;
-        min-height: 380px;
-      }
-    }
-  }
-
   .controls-panel {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
     padding: 8px;
-    border-right: none;
-  }
-
-  .preview-panel {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-
-    .preview-toolbar {
-      flex-wrap: wrap;
-      gap: 6px;
-      padding: 6px 8px;
-
-      .toolbar-left {
-        gap: 6px;
-        flex-wrap: wrap;
-      }
-
-      .toolbar-right {
-        gap: 4px;
-      }
-    }
   }
 
   .common-actions-bar {

@@ -485,11 +485,13 @@ export default class Main extends Vue {
   .main {
     display: flex;
     justify-content: center;
-    /* width: 915px; */
     margin: 0 auto;
-    /* background-color: aqua; */
+    max-width: 100%;
+    box-sizing: border-box;
+    flex-wrap: wrap;
+    gap: 16px;
+
     .container {
-      /* width: 300px; */
       width: 100%;
 
       label {
@@ -509,27 +511,46 @@ export default class Main extends Vue {
         display:none; 
       }
     }
+
+    .vrmviewContainer {
+      flex: 0 0 auto;
+      width: 600px;
+      max-width: 100%;
+    }
+
+    .vrmparserContainer {
+      flex: 0 1 600px;
+      width: 100%;
+      max-width: 600px;
+      min-width: 0;
+    }
   }
   
-  @media screen and (max-width: 480px) { 
+  @media screen and (max-width: 640px) {
     .main {
       flex-direction: column;
+      align-items: center;
+      gap: 8px;
+
+      .container {
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      .vrmviewContainer,
+      .vrmparserContainer {
+        width: 100%;
+        max-width: 100%;
+      }
+    }
+  }
+
+  @media screen and (max-width: 480px) { 
+    .main {
       .container {
         width: 300px;
         margin: 0 auto;
       }
     }
   }
-
-  /*
-  @media screen and (max-width: 767px) {
-    .main {
-      flex-direction: column;
-
-      .container {
-        width: 100%;
-      }
-    }
-  }
-  */
 </style>
