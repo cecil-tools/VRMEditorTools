@@ -12,6 +12,7 @@
         <li :class="{ active: selectTabType === 'tab_blendshape' }" @click="clickSelectTab('tab_blendshape')">{{$t('tabBlendShape')}}</li>
         <li :class="{ active: selectTabType === 'tab_armature' }" @click="clickSelectTab('tab_armature')">{{$t('tabArmature')}}</li>
         <li :class="{ active: selectTabType === 'tab_accessory' }" @click="clickSelectTab('tab_accessory')">{{$t('tabAccessory')}}</li>
+        <li :class="{ active: selectTabType === 'tab_motion' }" @click="clickSelectTab('tab_motion')">{{$t('tabMotion')}}</li>
         <!--
         <li @click="clickSelectTab('tab_short_video')">{{$t('tabShortVideo')}}</li>
         -->
@@ -27,6 +28,7 @@
     <TabBlendShape ref="tabBlendShape" :selectTabType="selectTabType" :drawVrm="drawVrm" :blendShapeGroups="blendShapeGroups" :morphMeshes="morphMeshes" :json="json" :vrmVersion="vrmVersion" :changeBlendShape="changeBlendShape" @download-all-blendshapes="onDownloadAllBlendShapes" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @reload-blendshapes="reloadBlendShapes" />
     <TabArmature :selectTabType="selectTabType" :json="json" :vrmVersion="vrmVersion" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" />
     <TabAccessory ref="tabAccessory" :selectTabType="selectTabType" :json="json" :vrmVersion="vrmVersion" @load-accessory="onLoadAccessory" @select-accessory="onSelectAccessory" @toggle-accessory-visibility="onToggleAccessoryVisibility" @remove-accessory="onRemoveAccessory" @focus-accessory="onFocusAccessory" @change-accessory-bone="onChangeAccessoryBone" @change-accessory-mode="onChangeAccessoryMode" @change-accessory-transform="onChangeAccessoryTransform" @activate-accessory-mode="onActivateAccessoryMode" @merge-accessories-to-vrm="onMergeAccessoriesToVRM" />
+    <TabMotion ref="tabMotion" :selectTabType="selectTabType" :motionInfo="motionInfo" :isPlaying="isMotionPlaying" :currentTime="motionCurrentTime" :duration="motionDuration" @load-vrma="onLoadVRMA" @play-motion="onPlayMotion" @pause-motion="onPauseMotion" @stop-motion="onStopMotion" @seek-motion="onSeekMotion" @set-motion-speed="onSetMotionSpeed" @set-motion-loop="onSetMotionLoop" @reset-motion-pose="onResetMotionPose" />
   </div>
 </template>
 
@@ -44,6 +46,7 @@ import TabMeta from '@/components/VRMParserViewTabs/TabMeta.vue'
 import TabBlendShape from './VRMParserViewTabs/TabBlendShape.vue'
 import TabArmature from '@/components/VRMParserViewTabs/TabArmature.vue'
 import TabAccessory from '@/components/VRMParserViewTabs/TabAccessory.vue'
+import TabMotion from '@/components/VRMParserViewTabs/TabMotion.vue'
 
 @Component({
   components: {
@@ -56,10 +59,23 @@ import TabAccessory from '@/components/VRMParserViewTabs/TabAccessory.vue'
     TabMeta,
     TabBlendShape,
     TabArmature,
-    TabAccessory
+    TabAccessory,
+    TabMotion
   }
 })
 export default class VRMParserView extends Vue {
+  @Prop({ default: null })
+  motionInfo!: { fileName: string; duration: number; trackCount: number } | null;
+
+  @Prop({ default: false })
+  isMotionPlaying!: boolean;
+
+  @Prop({ default: 0 })
+  motionCurrentTime!: number;
+
+  @Prop({ default: 0 })
+  motionDuration!: number;
+
   @Prop() 
   drawVrm: (file: File) => void
 
@@ -296,6 +312,39 @@ export default class VRMParserView extends Vue {
     if (tab && tab.updateTransformFromGizmo) {
       tab.updateTransformFromGizmo(payload);
     }
+  }
+
+  // モーション操作イベント中継
+  onLoadVRMA(file: File) {
+    this.$emit('load-vrma', file);
+  }
+
+  onPlayMotion() {
+    this.$emit('play-motion');
+  }
+
+  onPauseMotion() {
+    this.$emit('pause-motion');
+  }
+
+  onStopMotion() {
+    this.$emit('stop-motion');
+  }
+
+  onSeekMotion(time: number) {
+    this.$emit('seek-motion', time);
+  }
+
+  onSetMotionSpeed(speed: number) {
+    this.$emit('set-motion-speed', speed);
+  }
+
+  onSetMotionLoop(loop: boolean) {
+    this.$emit('set-motion-loop', loop);
+  }
+
+  onResetMotionPose() {
+    this.$emit('reset-motion-pose');
   }
 }
 </script>

@@ -284,5 +284,27 @@ export default {
         hideColorWheel: 'Hide Color Wheel',
         applyShort: 'Apply ({count})',
         downloadShort: 'Save',
+    },
+
+    tabMotion: 'Motion',
+
+    // Motion (VRMA)
+    motion: {
+        title: 'Motion Player (VRMA)',
+        description: 'Load a VRMA (VRM Animation / .vrma) file to play motion on the avatar',
+        selectFile: 'Select VRMA File',
+        dragDropHint: 'or drag & drop .vrma file here',
+        loadedMotion: 'Loaded Motion',
+        fileName: 'File Name',
+        duration: 'Duration',
+        trackCount: 'Tracks',
+        play: 'Play',
+        pause: 'Pause',
+        stop: 'Stop',
+        resetPose: 'Reset Pose',
+        loop: 'Loop Playback',
+        playbackSpeed: 'Speed',
+        noMotion: 'No VRMA file loaded',
+        loadError: 'Failed to load VRMA file: ',
     }
 }
