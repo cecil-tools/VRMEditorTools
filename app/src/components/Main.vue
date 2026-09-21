@@ -13,7 +13,7 @@
       </div>
     </div>
     <div class="container vrmparserContainer">
-      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" :motionInfo="motionInfo" :isMotionPlaying="isMotionPlaying" :motionCurrentTime="motionCurrentTime" :motionDuration="motionDuration" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" @preview-material-outline-width="onPreviewMaterialOutlineWidth" @preview-material-outline-mode="onPreviewMaterialOutlineMode" @preview-texture="onPreviewTexture" @reset-texture-preview="onResetTexturePreview" @load-accessory="onLoadAccessory" @select-accessory="onSelectAccessory" @toggle-accessory-visibility="onToggleAccessoryVisibility" @remove-accessory="onRemoveAccessory" @focus-accessory="onFocusAccessory" @change-accessory-bone="onChangeAccessoryBone" @change-accessory-mode="onChangeAccessoryMode" @change-accessory-transform="onChangeAccessoryTransform" @activate-accessory-mode="onActivateAccessoryMode" @merge-accessories-to-vrm="onMergeAccessoriesToVRM" @load-vrma="onLoadVRMA" @play-motion="onPlayMotion" @pause-motion="onPauseMotion" @stop-motion="onStopMotion" @seek-motion="onSeekMotion" @set-motion-speed="onSetMotionSpeed" @set-motion-loop="onSetMotionLoop" @reset-motion-pose="onResetMotionPose" />
+      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" :motionInfo="motionInfo" :isMotionPlaying="isMotionPlaying" :motionCurrentTime="motionCurrentTime" :motionDuration="motionDuration" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" @preview-material-outline-width="onPreviewMaterialOutlineWidth" @preview-material-outline-mode="onPreviewMaterialOutlineMode" @preview-texture="onPreviewTexture" @reset-texture-preview="onResetTexturePreview" @load-accessory="onLoadAccessory" @select-accessory="onSelectAccessory" @toggle-accessory-visibility="onToggleAccessoryVisibility" @remove-accessory="onRemoveAccessory" @focus-accessory="onFocusAccessory" @change-accessory-bone="onChangeAccessoryBone" @change-accessory-mode="onChangeAccessoryMode" @change-accessory-transform="onChangeAccessoryTransform" @activate-accessory-mode="onActivateAccessoryMode" @merge-accessories-to-vrm="onMergeAccessoriesToVRM" @load-vrma="onLoadVRMA" @play-motion="onPlayMotion" @pause-motion="onPauseMotion" @stop-motion="onStopMotion" @seek-motion="onSeekMotion" @set-motion-speed="onSetMotionSpeed" @set-motion-loop="onSetMotionLoop" @reset-motion-pose="onResetMotionPose" @preview-spring-bone="onPreviewSpringBone" />
     </div>
 </div>
 </template>
@@ -469,6 +469,13 @@ export default class Main extends Vue {
     this.isMotionPlaying = payload.isPlaying;
     if (payload.currentTime !== undefined) {
       this.motionCurrentTime = payload.currentTime;
+    }
+  }
+
+  onPreviewSpringBone(payload: { targetBoneNames: string[]; settings: { gravityPower?: number; hitRadius?: number } }) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.updateSpringBoneLive) {
+      vrmview.updateSpringBoneLive(payload.targetBoneNames, payload.settings);
     }
   }
 }

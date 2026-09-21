@@ -21,7 +21,7 @@
     <TabImages :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" :vrmVersion="vrmVersion" />
     <TabTextureColor ref="tabTextureColor" :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" :vrmVersion="vrmVersion" :json="json" @preview-texture="onPreviewTexture" @reset-texture-preview="onResetTexturePreview" />
     <TabFirstPerson ref="tabFirstPerson" :selectTabType="selectTabType" :firstPerson="firstPerson" :vrmScale="vrmScale" :drawVrm="drawVrm" :vrmVersion="vrmVersion" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" />
-    <TabVroid :selectTabType="selectTabType" :springBoneSkirt="springBoneSkirt" />
+    <TabVroid :selectTabType="selectTabType" :springBoneGroups="springBoneGroups" :vrmVersion="vrmVersion" @preview-spring-bone="onPreviewSpringBone" />
     <TabShortVideo :selectTabType="selectTabType" />
     <TabMaterials :selectTabType="selectTabType" :vrmImages="vrmImages" :drawVrm="drawVrm" @preview-material-outline-width="onPreviewMaterialOutlineWidth" @preview-material-outline-mode="onPreviewMaterialOutlineMode" />
     <TabMeta :selectTabType="selectTabType" :json="json" />
@@ -97,9 +97,8 @@ export default class VRMParserView extends Vue {
   vrmScale: any = 1.0
 
   // スプリングボーン 一覧
-  springBoneSkirt: any = []
-
-  // ブレンドシェイプグループ 
+  springBoneSkirt: any = null
+  springBoneGroups: any[] = []
   blendShapeGroups: any = []
 
   // モーフターゲットを持つメッシュ一覧
@@ -163,13 +162,10 @@ export default class VRMParserView extends Vue {
         // VRMParser.addHeadAccessory()
 
         // スプリングボーン グループ取得
-        const springBoneGroups: any = VRMParser.getSecondaryAnimationBoneGroups()
-        if (springBoneGroups) {
-          this.springBoneSkirt = springBoneGroups.filter((v :any) => {
-            return v.comment == 'Skirt'
-          })[0]
-          console.log('springBoneSkirt', this.springBoneSkirt)
-        }
+        this.springBoneGroups = VRMParser.getSpringBoneGroups()
+        console.log('springBoneGroups', this.springBoneGroups)
+        const skirtGroup = this.springBoneGroups.find((g: any) => g.isSkirt)
+        this.springBoneSkirt = skirtGroup || null
 
         // ブレンドシェイプグループ取得
         this.blendShapeGroups = VRMParser.getBlendShapeGroups()
@@ -312,6 +308,11 @@ export default class VRMParserView extends Vue {
     if (tab && tab.updateTransformFromGizmo) {
       tab.updateTransformFromGizmo(payload);
     }
+  }
+
+  // スプリングボーン リアルタイムプレビュー中継
+  onPreviewSpringBone(payload: any) {
+    this.$emit('preview-spring-bone', payload);
   }
 
   // モーション操作イベント中継

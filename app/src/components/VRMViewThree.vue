@@ -1718,6 +1718,31 @@ export default class VRMViewThree extends Vue {
     vrm.update(0);
     this.render();
   }
+
+  // スプリングボーンのリアルタイム設定更新
+  public updateSpringBoneLive = (targetBoneNames: string[], settings: { gravityPower: number; hitRadius: number }) => {
+    if (!this.gltf || !this.gltf.userData || !this.gltf.userData.vrm) return;
+    const vrm = this.gltf.userData.vrm;
+    const manager = vrm.springBoneManager;
+    if (!manager || !manager.joints) return;
+
+    const targetSet = new Set((targetBoneNames || []).map(n => n.toLowerCase()));
+    const isSkirtTarget = targetSet.has('skirt') || targetBoneNames.length === 0;
+
+    manager.joints.forEach((joint: any) => {
+      const boneName = joint.bone?.name?.toLowerCase() || '';
+      const isMatch = targetSet.has(boneName) || (isSkirtTarget && boneName.includes('skirt'));
+
+      if (isMatch) {
+        if (typeof settings.gravityPower === 'number') {
+          joint.settings.gravityPower = settings.gravityPower;
+        }
+        if (typeof settings.hitRadius === 'number') {
+          joint.settings.hitRadius = settings.hitRadius;
+        }
+      }
+    });
+  }
 }
 </script>
 
