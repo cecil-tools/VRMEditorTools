@@ -677,6 +677,167 @@ class VRMParser {
         return extVRM.secondaryAnimation?.boneGroups
     }
 
+    // スプリングボーン グループ一覧を共通形式で取得（VRM 0.x / 1.0 両対応）
+    public static getSpringBoneGroups = (): Array<{
+        id: string;
+        name: string;
+        isSkirt: boolean;
+        gravityPower: number;
+        hitRadius: number;
+        version: 0 | 1;
+        boneNames: string[];
+    }> => {
+        const version = VRMParser.getVRMVersion().version;
+        const result: Array<{
+            id: string;
+            name: string;
+            isSkirt: boolean;
+            gravityPower: number;
+            hitRadius: number;
+            version: 0 | 1;
+            boneNames: string[];
+        }> = [];
+
+        if (version === 0) {
+            const extVRM = VRMParser.getVRMExtensionJson();
+            const boneGroups = extVRM?.secondaryAnimation?.boneGroups || [];
+            boneGroups.forEach((bg: any, idx: number) => {
+                const boneNames = (bg.bones || []).map((bIdx: number) => VRMParser.json.nodes?.[bIdx]?.name || `Bone_${bIdx}`);
+                const isSkirt = (bg.comment && bg.comment.toLowerCase().includes('skirt')) ||
+                    boneNames.some((n: string) => n.toLowerCase().includes('skirt'));
+
+                let displayName = bg.comment;
+                if (!displayName) {
+                    if (isSkirt) {
+                        displayName = 'Skirt';
+                    } else if (boneNames.length > 0) {
+                        displayName = boneNames[0] + (boneNames.length > 1 ? ` (+${boneNames.length - 1})` : '');
+                    } else {
+                        displayName = `Spring #${idx + 1}`;
+                    }
+                }
+
+                result.push({
+                    id: `v0_${idx}`,
+                    name: displayName,
+                    isSkirt: !!isSkirt,
+                    gravityPower: typeof bg.gravityPower === 'number' ? bg.gravityPower : 0,
+                    hitRadius: typeof bg.hitRadius === 'number' ? bg.hitRadius : 0.02,
+                    version: 0,
+                    boneNames
+                });
+            });
+        } else {
+            // VRM 1.0
+            const springBoneExt = VRMParser.json.extensions?.VRMC_springBone;
+            const springs = springBoneExt?.springs || [];
+
+            const skirtSpringIndices: number[] = [];
+            const allSkirtBoneNames: string[] = [];
+
+            springs.forEach((sp: any, idx: number) => {
+                const boneNames = (sp.joints || []).map((j: any) => VRMParser.json.nodes?.[j.node]?.name || `Node_${j.node}`);
+                const isSkirt = (sp.name && sp.name.toLowerCase().includes('skirt')) ||
+                    boneNames.some((n: string) => n.toLowerCase().includes('skirt'));
+
+                if (isSkirt) {
+                    skirtSpringIndices.push(idx);
+                    allSkirtBoneNames.push(...boneNames);
+                }
+
+                let displayName = sp.name;
+                if (!displayName) {
+                    if (isSkirt) {
+                        displayName = `Skirt #${idx + 1}`;
+                    } else if (boneNames.length > 0) {
+                        displayName = boneNames[0] + (boneNames.length > 1 ? ` (+${boneNames.length - 1})` : '');
+                    } else {
+                        displayName = `Spring #${idx + 1}`;
+                    }
+                }
+
+                const firstJoint = sp.joints?.[0];
+                result.push({
+                    id: `v1_${idx}`,
+                    name: displayName,
+                    isSkirt: !!isSkirt,
+                    gravityPower: typeof firstJoint?.gravityPower === 'number' ? firstJoint.gravityPower : 0,
+                    hitRadius: typeof firstJoint?.hitRadius === 'number' ? firstJoint.hitRadius : 0.02,
+                    version: 1,
+                    boneNames
+                });
+            });
+
+            // VRM 1.0 でスカートスプリングが複数ある場合、一括調整用グループを先頭に追加
+            if (skirtSpringIndices.length > 1) {
+                const firstSkirt = result.find(r => r.id === `v1_${skirtSpringIndices[0]}`);
+                result.unshift({
+                    id: 'v1_skirt_all',
+                    name: `Skirt (すべて: ${skirtSpringIndices.length}本)`,
+                    isSkirt: true,
+                    gravityPower: firstSkirt ? firstSkirt.gravityPower : 0,
+                    hitRadius: firstSkirt ? firstSkirt.hitRadius : 0.02,
+                    version: 1,
+                    boneNames: Array.from(new Set(allSkirtBoneNames))
+                });
+            }
+        }
+
+        return result;
+    }
+
+    // スプリングボーン グループの設定を更新
+    public static updateSpringBoneGroup = (
+        groupId: string,
+        settings: { gravityPower: number; hitRadius: number }
+    ): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            const version = VRMParser.getVRMVersion().version;
+            if (version === 0) {
+                const extVRM = VRMParser.getVRMExtensionJson();
+                const boneGroups = extVRM?.secondaryAnimation?.boneGroups || [];
+                const idx = parseInt(groupId.replace('v0_', ''), 10);
+                if (boneGroups[idx]) {
+                    boneGroups[idx].gravityPower = settings.gravityPower;
+                    boneGroups[idx].hitRadius = settings.hitRadius;
+                }
+            } else {
+                // VRM 1.0
+                const springBoneExt = VRMParser.json.extensions?.VRMC_springBone;
+                const springs = springBoneExt?.springs || [];
+
+                if (groupId === 'v1_skirt_all') {
+                    springs.forEach((sp: any) => {
+                        const boneNames = (sp.joints || []).map((j: any) => VRMParser.json.nodes?.[j.node]?.name || '');
+                        const isSkirt = (sp.name && sp.name.toLowerCase().includes('skirt')) ||
+                            boneNames.some((n: string) => n.toLowerCase().includes('skirt'));
+                        if (isSkirt) {
+                            (sp.joints || []).forEach((j: any) => {
+                                j.gravityPower = settings.gravityPower;
+                                j.hitRadius = settings.hitRadius;
+                            });
+                        }
+                    });
+                } else {
+                    const idx = parseInt(groupId.replace('v1_', ''), 10);
+                    if (springs[idx]) {
+                        (springs[idx].joints || []).forEach((j: any) => {
+                            j.gravityPower = settings.gravityPower;
+                            j.hitRadius = settings.hitRadius;
+                        });
+                    }
+                }
+            }
+
+            return VRMParser.chunkRebuilding()
+                .then(() => resolve())
+                .catch((e: any) => {
+                    console.error('updateSpringBoneGroup error', e);
+                    reject(e);
+                });
+        });
+    }
+
     // スプリングボーンを更新
     public static setSecondaryAnimationBoneGroups = (boneGroups: any): Promise<void> => {
         return new Promise((resolve, reject) => {
