@@ -2117,6 +2117,83 @@ class VRMParser {
 
         await VRMParser.chunkRebuilding()
     }
+
+    /**
+     * ポリゴン削減後のインデックスバッファを chunk1 に追記し、アクセサ・バッファビュー・チャンクを再構築する
+     */
+    public static applyPolygonReduction = async (
+        reducedResults: {
+            meshIndex: number
+            primitiveIndex: number
+            newIndices: Uint16Array | Uint32Array
+        }[]
+    ): Promise<void> => {
+        if (!VRMParser.json || !VRMParser.chunk1) {
+            throw new Error('VRM data not found')
+        }
+        const json = VRMParser.json
+        let chunkData = VRMParser.chunk1.chunkData
+
+        for (const res of reducedResults) {
+            const mesh = json.meshes?.[res.meshIndex]
+            if (!mesh) continue
+            const prim = mesh.primitives?.[res.primitiveIndex]
+            if (!prim || typeof prim.indices !== 'number') continue
+
+            const newIndices = res.newIndices
+            const rawBytes = new Uint8Array(newIndices.buffer, newIndices.byteOffset, newIndices.byteLength)
+
+            // 4-byte padding
+            const padding = (4 - (rawBytes.byteLength % 4)) % 4
+            let alignedBytes = rawBytes
+            if (padding > 0) {
+                const padded = new Uint8Array(rawBytes.byteLength + padding)
+                padded.set(rawBytes)
+                alignedBytes = padded
+            }
+
+            // chunkData 末尾に追記
+            const newOffset = chunkData.byteLength
+            const newChunk1Data = new Uint8Array(newOffset + alignedBytes.byteLength)
+            newChunk1Data.set(chunkData, 0)
+            newChunk1Data.set(alignedBytes, newOffset)
+            chunkData = newChunk1Data
+            VRMParser.chunk1.chunkData = newChunk1Data
+            VRMParser.chunk1.chunkLength = newChunk1Data.byteLength
+
+            // 新規 bufferView の追加
+            if (!json.bufferViews) json.bufferViews = []
+            const newBvIdx = json.bufferViews.length
+            json.bufferViews.push({
+                buffer: 0,
+                byteOffset: newOffset,
+                byteLength: rawBytes.byteLength,
+                target: 34963 // ELEMENT_ARRAY_BUFFER
+            })
+
+            // アクセサの更新
+            const acc = json.accessors[prim.indices]
+            if (acc) {
+                acc.bufferView = newBvIdx
+                acc.byteOffset = 0
+                acc.count = newIndices.length
+                acc.componentType = newIndices instanceof Uint16Array ? 5123 : 5125
+                acc.type = 'SCALAR'
+
+                let minVal = Infinity
+                let maxVal = -Infinity
+                for (let i = 0; i < newIndices.length; i++) {
+                    const val = newIndices[i]
+                    if (val < minVal) minVal = val
+                    if (val > maxVal) maxVal = val
+                }
+                acc.min = [minVal === Infinity ? 0 : minVal]
+                acc.max = [maxVal === -Infinity ? 0 : maxVal]
+            }
+        }
+
+        await VRMParser.chunkRebuilding()
+    }
 }
 
 export default VRMParser;
