@@ -15,14 +15,14 @@ export default {
     titleScale: 'Scale',
     updateFirstPerson: 'Update',
     updatedFirstPersonMessage: 'First person offset updated',
-    tabVroid: 'For VRoid',
+    tabVroid: 'Spring Bone',
     updateVroid: 'Save',
     placeholderGravityPower: 'Recommended: 0.05 - 0.2',
     placeholderHitRadius: "Recommended: 0.01 - 0.02",
 
-    // VRoid / SpringBone
+    // SpringBone
     vroid: {
-        title: 'Spring Bone Settings (VRoid / Swaying)',
+        title: 'Spring Bone Settings',
         description: 'Adjust gravity power and collision radius for skirts, hair, etc.',
         targetGroup: 'Target Group',
         skirtBadge: 'Skirt',

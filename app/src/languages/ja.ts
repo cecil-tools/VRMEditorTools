@@ -15,14 +15,14 @@ export default {
     titleScale: 'スケール',
     updateFirstPerson: '更新',
     updatedFirstPersonMessage: '視点位置を更新しました',
-    tabVroid: 'VRoid向け',
+    tabVroid: '揺れもの',
     updateVroid: '更新',
     placeholderGravityPower: 'おすすめ値は 0.05 〜 0.2',
     placeholderHitRadius: "おすすめ値は 0.01 〜 0.02",
 
-    // VRoid向け / スプリングボーン
+    // 揺れもの / スプリングボーン
     vroid: {
-        title: '揺れもの調整 (VRoid / スプリングボーン)',
+        title: '揺れもの調整 (スプリングボーン)',
         description: 'スカートや髪などのスプリングボーン（揺れもの）の重力や当たり判定を調整します',
         targetGroup: '対象グループ',
         skirtBadge: 'スカート',
