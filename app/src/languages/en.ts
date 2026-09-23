@@ -12,7 +12,7 @@ export default {
     screenshotTransparent: 'Transparent Background',
     exportImage: 'Download Image',
     importImage: 'Upload Image',
-    tabImages: 'Images',
+    tabImages: 'Textures',
     tabTextureColor: 'Color Adjustment',
     tabFirstPerson: 'Perspective, Scale',
     titleFirstPerson: 'FirstPersonOffset',

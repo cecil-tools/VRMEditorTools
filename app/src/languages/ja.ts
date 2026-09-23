@@ -12,7 +12,7 @@ export default {
     screenshotTransparent: '背景を透過',
     exportImage: 'ダウンロード',
     importImage: 'アップロード',
-    tabImages: '画像一覧',
+    tabImages: 'テクスチャ',
     tabTextureColor: '色調補正',
     tabFirstPerson: '視点,スケール調整',
     titleFirstPerson: '視点位置',
