@@ -1,6 +1,21 @@
 <template>
   <div class="vrmview">
-    <canvas id="canvas"></canvas>
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+      <button
+        type="button"
+        class="floating-capture-btn"
+        :title="$t('btnCaptureScreenshot')"
+        :aria-label="$t('btnCaptureScreenshot')"
+        @click="onClickFloatingScreenshot"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+          <circle cx="12" cy="13" r="4"></circle>
+        </svg>
+      </button>
+      <div v-if="showFlash" class="shutter-flash"></div>
+    </div>
   </div>
 </template>
 
@@ -21,6 +36,7 @@ import VRMParser from '@/module/VRMParser'
 export default class VRMViewThree extends Vue {
   renderer: any | null = null;
   scene = new THREE.Scene();
+  showFlash = false;
   camera: any | null = null;
   controls: any | null = null;
   transformControls: any | null = null;
@@ -82,6 +98,8 @@ export default class VRMViewThree extends Vue {
     // renderer 初期設定
     this.renderer = new THREE.WebGLRenderer({
       canvas: viewerElement,
+      alpha: true,
+      preserveDrawingBuffer: true,
     });
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(viewerElement.clientWidth, viewerElement.clientHeight);
@@ -940,6 +958,81 @@ export default class VRMViewThree extends Vue {
       this.scene.remove(expr);
     }
   } 
+
+  // シャッター演出
+  triggerShutterFlash = () => {
+    this.showFlash = true;
+    setTimeout(() => {
+      this.showFlash = false;
+    }, 150);
+  };
+
+  // フローティングカメラボタンクリック
+  onClickFloatingScreenshot = () => {
+    this.$emit('click-screenshot');
+  };
+
+  // スクリーンショット撮影
+  public captureScreenshot = async (options?: {
+    transparent?: boolean;
+    filename?: string;
+  }): Promise<string> => {
+    if (!this.renderer || !this.camera) return "";
+
+    // 編集用ギズモ・ヘルパーを一時退避
+    const prevTransformControls = this.transformControls ? this.transformControls.visible : undefined;
+    const prevAccessoryControls = this.accessoryTransformControls ? this.accessoryTransformControls.visible : undefined;
+    const prevFirstPersonHelper = this.firstPersonHelper ? this.firstPersonHelper.visible : undefined;
+    const prevBoneHighlight = this.boneHighlightGroup ? this.boneHighlightGroup.visible : undefined;
+
+    if (this.transformControls) this.transformControls.visible = false;
+    if (this.accessoryTransformControls) this.accessoryTransformControls.visible = false;
+    if (this.firstPersonHelper) this.firstPersonHelper.visible = false;
+    if (this.boneHighlightGroup) this.boneHighlightGroup.visible = false;
+
+    // 背景透過オプション
+    const isTransparent = !!(options && options.transparent);
+    if (isTransparent) {
+      this.renderer.setClearColor(0x000000, 0.0);
+    }
+
+    // レンダリング実行
+    this.render();
+
+    // 画像データ取得
+    const canvas = this.renderer.domElement;
+    const dataUrl = canvas.toDataURL("image/png");
+
+    // 状態復元
+    if (isTransparent) {
+      this.renderer.setClearColor(0x7fbfff, 1.0);
+    }
+    if (this.transformControls && prevTransformControls !== undefined) {
+      this.transformControls.visible = prevTransformControls;
+    }
+    if (this.accessoryTransformControls && prevAccessoryControls !== undefined) {
+      this.accessoryTransformControls.visible = prevAccessoryControls;
+    }
+    if (this.firstPersonHelper && prevFirstPersonHelper !== undefined) {
+      this.firstPersonHelper.visible = prevFirstPersonHelper;
+    }
+    if (this.boneHighlightGroup && prevBoneHighlight !== undefined) {
+      this.boneHighlightGroup.visible = prevBoneHighlight;
+    }
+    this.render();
+
+    // ダウンロード実行
+    const filename = (options && options.filename) ? options.filename : `vrm_screenshot_${Date.now()}.png`;
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = filename;
+    link.click();
+
+    // シャッター演出
+    this.triggerShutterFlash();
+
+    return dataUrl;
+  };
 
   // 3面図撮影
   captureThreeViews = async () => {
@@ -1824,17 +1917,80 @@ export default class VRMViewThree extends Vue {
 }
 </script>
 
-<style scoped>
-  #canvas {
-    margin: 0 auto;
+<style scoped lang="scss">
+  .canvas-container {
+    position: relative;
     width: 600px;
     height: 540px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 4px;
+  }
 
+  #canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
     background-color: gray;
+  }
+
+  .floating-capture-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    color: #333333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    padding: 0;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.98);
+      transform: scale(1.08);
+      box-shadow: 0 5px 14px rgba(0, 0, 0, 0.25);
+      color: #000000;
+    }
+
+    &:active {
+      transform: scale(0.94);
+    }
+
+    svg {
+      pointer-events: none;
+    }
+  }
+
+  .shutter-flash {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff;
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 20;
+    animation: flashFade 0.15s ease-out forwards;
+  }
+
+  @keyframes flashFade {
+    0% { opacity: 0.7; }
+    100% { opacity: 0; }
   }
   
   @media screen and (max-width: 480px) { 
-    #canvas {    
+    .canvas-container {    
       width: 300px;
       height: 400px;
     }

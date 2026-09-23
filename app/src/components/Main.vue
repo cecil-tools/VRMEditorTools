@@ -2,13 +2,23 @@
   <div class="main">
     <div class="container vrmviewContainer" @dragover.prevent @drop.prevent="onContainerDrop">
       <FileUpload :changeFile="changeFile" />
-      <VRMView ref="vrmview" :path="path" :debug="false" @change-first-person-offset="onChangeFirstPersonFromGizmo" @change-accessory-transform-from-gizmo="onChangeAccessoryTransformFromGizmo" @motion-time-update="onMotionTimeUpdate" @motion-state-change="onMotionStateChange" />
+      <VRMView ref="vrmview" :path="path" :debug="false" @change-first-person-offset="onChangeFirstPersonFromGizmo" @change-accessory-transform-from-gizmo="onChangeAccessoryTransformFromGizmo" @motion-time-update="onMotionTimeUpdate" @motion-state-change="onMotionStateChange" @click-screenshot="clickCaptureScreenshot" />
       <div>
         <label for="btnExport">{{$t('btnExport')}}</label>
         <input id="btnExport" type="button" @click="clickExport" />
       </div>
       <div>
-        <label for="btnCapture3Views">3面図保存</label>
+        <label for="btnCaptureScreenshot">{{$t('btnCaptureScreenshot')}}</label>
+        <input id="btnCaptureScreenshot" type="button" @click="clickCaptureScreenshot" />
+        <div class="screenshot-options">
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="isScreenshotTransparent" />
+            <span>{{$t('screenshotTransparent')}}</span>
+          </label>
+        </div>
+      </div>
+      <div>
+        <label for="btnCapture3Views">{{$t('btnCapture3Views')}}</label>
         <input id="btnCapture3Views" type="button" @click="clickCapture3Views" />
       </div>
     </div>
@@ -73,6 +83,33 @@ export default class Main extends Vue {
   clickExport() {
     const vrmparser = this.$refs.vrmparser as VRMParserView
     vrmparser.downloadFile()
+  }
+
+  // スクリーンショット設定
+  isScreenshotTransparent = false;
+
+  getScreenshotFileName(): string {
+    let baseName = 'vrm';
+    if (this.selectVrmFile && this.selectVrmFile.name) {
+      baseName = this.selectVrmFile.name.replace(/\.[^/.]+$/, "");
+    }
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    return `${baseName}_screenshot_${timestamp}.png`;
+  }
+
+  clickCaptureScreenshot() {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.captureScreenshot) {
+      const filename = this.getScreenshotFileName();
+      vrmview.captureScreenshot({
+        transparent: this.isScreenshotTransparent,
+        filename: filename
+      });
+    } else {
+      console.error("captureScreenshot method not found on VRMView");
+    }
   }
 
   clickCapture3Views() {
@@ -526,7 +563,7 @@ export default class Main extends Vue {
     .container {
       width: 100%;
 
-      label {
+      label:not(.checkbox-label) {
         font-size: large;
         border: solid 3px #AAAAAA;
         background-color: #F0F0F0;
@@ -535,12 +572,46 @@ export default class Main extends Vue {
         margin: 5px auto;
         transition: .3s;
       }
-      label:hover {
+      label:not(.checkbox-label):hover {
         background-color: #AAAAAA;
       }
       input[type="button"] {
         /* font-size: large; */
         display:none; 
+      }
+
+      .screenshot-options {
+        width: 90%;
+        margin: 4px auto 8px auto;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+
+        .checkbox-label {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 14px;
+          color: #555555;
+          cursor: pointer;
+          user-select: none;
+          background: transparent;
+          border: none;
+          width: auto;
+          margin: 0;
+
+          input[type="checkbox"] {
+            cursor: pointer;
+            accent-color: #0078d4;
+            width: 16px;
+            height: 16px;
+          }
+
+          &:hover {
+            color: #111111;
+            background: transparent;
+          }
+        }
       }
     }
 
