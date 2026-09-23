@@ -5,7 +5,17 @@
       <VRMView ref="vrmview" :path="path" :debug="false" @change-first-person-offset="onChangeFirstPersonFromGizmo" @change-accessory-transform-from-gizmo="onChangeAccessoryTransformFromGizmo" @motion-time-update="onMotionTimeUpdate" @motion-state-change="onMotionStateChange" @click-screenshot="clickCaptureScreenshot" />
       <div>
         <label for="btnExport">{{$t('btnExport')}}</label>
-        <input id="btnExport" type="button" @click="clickExport" />
+        <input id="btnExport" type="button" @click="clickExport" :disabled="isExporting" />
+        <div class="export-options">
+          <label class="select-label">
+            <span class="label-text">{{$t('exportVersion')}}:</span>
+            <select v-model="exportVRMVersion" class="export-select" :disabled="isExporting">
+              <option value="auto">{{$t('exportVersionAuto')}} ({{currentVRMVersionLabel}})</option>
+              <option value="0">{{$t('exportVersionVrm0')}}</option>
+              <option value="1">{{$t('exportVersionVrm1')}}</option>
+            </select>
+          </label>
+        </div>
       </div>
       <div>
         <label for="btnCaptureScreenshot">{{$t('btnCaptureScreenshot')}}</label>
@@ -55,6 +65,15 @@ export default class Main extends Vue {
   motionCurrentTime = 0;
   motionDuration = 0;
 
+  // エクスポート設定
+  exportVRMVersion: 'auto' | '0' | '1' = 'auto';
+  currentLoadedVRMVersion = 0;
+  isExporting = false;
+
+  get currentVRMVersionLabel(): string {
+    return this.currentLoadedVRMVersion === 1 ? 'VRM 1.0' : 'VRM 0.x';
+  }
+
   mounted() {
     // VRM 読み込み
     const vrmview = this.$refs.vrmview as VRMView
@@ -66,6 +85,9 @@ export default class Main extends Vue {
             // VRMパース
             const vrmparser = this.$refs.vrmparser as VRMParserView    
             vrmparser.parse( new File([blob], 'vrm') )
+              .then(() => {
+                this.currentLoadedVRMVersion = VRMParser.getVRMVersion().version;
+              })
           })
       })
       .catch((e) => {
@@ -81,8 +103,22 @@ export default class Main extends Vue {
   }
 
   clickExport() {
-    const vrmparser = this.$refs.vrmparser as VRMParserView
-    vrmparser.downloadFile()
+    if (this.isExporting) return;
+    const vrmparser = this.$refs.vrmparser as VRMParserView;
+    if (!vrmparser) return;
+
+    this.isExporting = true;
+    vrmparser.downloadFile(this.exportVRMVersion)
+      .then(() => {
+        console.log('Export succeeded');
+      })
+      .catch((e: any) => {
+        console.error('Export failed', e);
+        alert((this as any).$t('exportConversionFailed'));
+      })
+      .finally(() => {
+        this.isExporting = false;
+      });
   }
 
   // スクリーンショット設定
@@ -131,6 +167,7 @@ export default class Main extends Vue {
             .then((json) => {
               // カメラ位置を調整する
               vrmview.setCameraTarget(json);
+              this.currentLoadedVRMVersion = VRMParser.getVRMVersion().version;
             })
         })
         .catch((e) => {
@@ -563,7 +600,7 @@ export default class Main extends Vue {
     .container {
       width: 100%;
 
-      label:not(.checkbox-label) {
+      label:not(.checkbox-label):not(.select-label) {
         font-size: large;
         border: solid 3px #AAAAAA;
         background-color: #F0F0F0;
@@ -572,12 +609,62 @@ export default class Main extends Vue {
         margin: 5px auto;
         transition: .3s;
       }
-      label:not(.checkbox-label):hover {
+      label:not(.checkbox-label):not(.select-label):hover {
         background-color: #AAAAAA;
       }
       input[type="button"] {
         /* font-size: large; */
         display:none; 
+      }
+
+      .export-options {
+        width: 90%;
+        margin: 4px auto 8px auto;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+
+        .select-label {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 14px;
+          color: #555555;
+          user-select: none;
+          background: transparent;
+          border: none;
+          width: auto;
+          margin: 0;
+
+          .label-text {
+            font-weight: 500;
+          }
+
+          .export-select {
+            padding: 3px 8px;
+            font-size: 13px;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            background: #ffffff;
+            color: #333333;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s;
+
+            &:hover, &:focus {
+              border-color: #0078d4;
+            }
+
+            &:disabled {
+              opacity: 0.6;
+              cursor: not-allowed;
+            }
+          }
+
+          &:hover {
+            background: transparent;
+          }
+        }
       }
 
       .screenshot-options {
