@@ -27,6 +27,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { VRMLoaderPlugin, VRMExpression, VRMExpressionMorphTargetBind } from '@pixiv/three-vrm';
+import { VRMMetaLoaderPlugin } from '@pixiv/three-vrm-core';
 import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
 import JSZip from 'jszip';
 
@@ -145,7 +146,16 @@ export default class VRMViewThree extends Vue {
     this.initTransformControls(canvas);
 
     // VRM & VRMA ローダープラグイン登録
-    this.loader.register((parser: any) => new VRMLoaderPlugin(parser));
+    this.loader.register((parser: any) => {
+      const v1LicenseUrl = parser.json?.extensions?.VRMC_vrm?.meta?.licenseUrl;
+      const acceptLicenseUrls = ['https://vrm.dev/licenses/1.0/'];
+      if (v1LicenseUrl && !acceptLicenseUrls.includes(v1LicenseUrl)) {
+        acceptLicenseUrls.push(v1LicenseUrl);
+      }
+      return new VRMLoaderPlugin(parser, {
+        metaPlugin: new VRMMetaLoaderPlugin(parser, { acceptLicenseUrls })
+      });
+    });
     this.loader.register((parser: any) => new VRMAnimationLoaderPlugin(parser));
 
     this.update();

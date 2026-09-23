@@ -65,34 +65,30 @@ export class VRMVersionConverter {
             commercialUsage = 'personalProfit';
         }
 
-        let licenseUrl = v0Meta.otherLicenseUrl || v0Meta.otherPermissionUrl || '';
-        if (!licenseUrl) {
-            switch (v0Meta.licenseName) {
-                case 'CC0':
-                    licenseUrl = 'https://creativecommons.org/publicdomain/zero/1.0/';
-                    break;
-                case 'CC_BY':
-                    licenseUrl = 'https://creativecommons.org/licenses/by/4.0/';
-                    break;
-                case 'CC_BY_NC':
-                    licenseUrl = 'https://creativecommons.org/licenses/by-nc/4.0/';
-                    break;
-                case 'CC_BY_SA':
-                    licenseUrl = 'https://creativecommons.org/licenses/by-sa/4.0/';
-                    break;
-                case 'CC_BY_NC_SA':
-                    licenseUrl = 'https://creativecommons.org/licenses/by-nc-sa/4.0/';
-                    break;
-                case 'CC_BY_ND':
-                    licenseUrl = 'https://creativecommons.org/licenses/by-nd/4.0/';
-                    break;
-                case 'CC_BY_NC_ND':
-                    licenseUrl = 'https://creativecommons.org/licenses/by-nc-nd/4.0/';
-                    break;
-                default:
-                    licenseUrl = 'https://vrm.dev/licenses/1.0/';
-                    break;
-            }
+        const otherLicenseUrl = v0Meta.otherLicenseUrl || v0Meta.otherPermissionUrl || '';
+        let ccLicenseUrl = '';
+        switch (v0Meta.licenseName) {
+            case 'CC0':
+                ccLicenseUrl = 'https://creativecommons.org/publicdomain/zero/1.0/';
+                break;
+            case 'CC_BY':
+                ccLicenseUrl = 'https://creativecommons.org/licenses/by/4.0/';
+                break;
+            case 'CC_BY_NC':
+                ccLicenseUrl = 'https://creativecommons.org/licenses/by-nc/4.0/';
+                break;
+            case 'CC_BY_SA':
+                ccLicenseUrl = 'https://creativecommons.org/licenses/by-sa/4.0/';
+                break;
+            case 'CC_BY_NC_SA':
+                ccLicenseUrl = 'https://creativecommons.org/licenses/by-nc-sa/4.0/';
+                break;
+            case 'CC_BY_ND':
+                ccLicenseUrl = 'https://creativecommons.org/licenses/by-nd/4.0/';
+                break;
+            case 'CC_BY_NC_ND':
+                ccLicenseUrl = 'https://creativecommons.org/licenses/by-nc-nd/4.0/';
+                break;
         }
 
         const meta10: any = {
@@ -101,7 +97,7 @@ export class VRMVersionConverter {
             authors,
             contactInformation: v0Meta.contactInformation || '',
             references: v0Meta.reference ? [v0Meta.reference] : [],
-            licenseUrl,
+            licenseUrl: 'https://vrm.dev/licenses/1.0/',
             avatarPermission,
             allowExcessivelyViolentUsage: v0Meta.violentUssageName === 'Allow',
             allowExcessivelySexualUsage: v0Meta.sexualUssageName === 'Allow',
@@ -110,6 +106,10 @@ export class VRMVersionConverter {
             allowRedistribution: v0Meta.licenseName !== 'Redistribution_Prohibited',
             modification: 'allowModification'
         };
+        const finalOtherLicenseUrl = otherLicenseUrl || ccLicenseUrl;
+        if (finalOtherLicenseUrl) {
+            meta10.otherLicenseUrl = finalOtherLicenseUrl;
+        }
         if (typeof v0Meta.texture === 'number' && v0Meta.texture >= 0) {
             meta10.thumbnailImage = v0Meta.texture;
         }
@@ -407,9 +407,9 @@ export class VRMVersionConverter {
             violentUssageName: v1Meta.allowExcessivelyViolentUsage ? 'Allow' : 'Disallow',
             sexualUssageName: v1Meta.allowExcessivelySexualUsage ? 'Allow' : 'Disallow',
             commercialUssageName: v1Meta.commercialUsage === 'personalProfit' || v1Meta.commercialUsage === 'corporation' ? 'Allow' : 'Disallow',
-            otherPermissionUrl: '',
+            otherPermissionUrl: v1Meta.otherLicenseUrl || (v1Meta.licenseUrl && v1Meta.licenseUrl !== 'https://vrm.dev/licenses/1.0/' ? v1Meta.licenseUrl : '') || '',
             licenseName: 'Other',
-            otherLicenseUrl: v1Meta.licenseUrl || v1Meta.otherLicenseUrl || ''
+            otherLicenseUrl: v1Meta.otherLicenseUrl || (v1Meta.licenseUrl && v1Meta.licenseUrl !== 'https://vrm.dev/licenses/1.0/' ? v1Meta.licenseUrl : '') || ''
         };
 
         // 3. ヒューマノイドボーンの変換 (オブジェクト -> 配列 & ボーン名対応)
