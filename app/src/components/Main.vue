@@ -75,6 +75,12 @@ export default class Main extends Vue {
   }
 
   mounted() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramVrm = urlParams.get('vrm');
+    if (paramVrm) {
+      this.path = paramVrm;
+    }
+
     // VRM 読み込み
     const vrmview = this.$refs.vrmview as VRMView
     vrmview.drawVrm( this.path )
@@ -83,8 +89,9 @@ export default class Main extends Vue {
           .then((res) => res.blob())
           .then(blob => {            
             // VRMパース
+            const filename = this.path.split('/').pop() || 'model.vrm';
             const vrmparser = this.$refs.vrmparser as VRMParserView    
-            vrmparser.parse( new File([blob], 'vrm') )
+            vrmparser.parse( new File([blob], filename) )
               .then(() => {
                 this.currentLoadedVRMVersion = VRMParser.getVRMVersion().version;
               })
