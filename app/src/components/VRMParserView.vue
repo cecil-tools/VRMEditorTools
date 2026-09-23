@@ -13,6 +13,7 @@
         <li :class="{ active: selectTabType === 'tab_armature' }" @click="clickSelectTab('tab_armature')">{{$t('tabArmature')}}</li>
         <li :class="{ active: selectTabType === 'tab_accessory' }" @click="clickSelectTab('tab_accessory')">{{$t('tabAccessory')}}</li>
         <li :class="{ active: selectTabType === 'tab_motion' }" @click="clickSelectTab('tab_motion')">{{$t('tabMotion')}}</li>
+        <li :class="{ active: selectTabType === 'tab_reduce' }" @click="clickSelectTab('tab_reduce')">{{$t('tabReduce')}}</li>
         <!--
         <li @click="clickSelectTab('tab_short_video')">{{$t('tabShortVideo')}}</li>
         -->
@@ -29,6 +30,7 @@
     <TabArmature :selectTabType="selectTabType" :json="json" :vrmVersion="vrmVersion" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" />
     <TabAccessory ref="tabAccessory" :selectTabType="selectTabType" :json="json" :vrmVersion="vrmVersion" @load-accessory="onLoadAccessory" @select-accessory="onSelectAccessory" @toggle-accessory-visibility="onToggleAccessoryVisibility" @remove-accessory="onRemoveAccessory" @focus-accessory="onFocusAccessory" @change-accessory-bone="onChangeAccessoryBone" @change-accessory-mode="onChangeAccessoryMode" @change-accessory-transform="onChangeAccessoryTransform" @activate-accessory-mode="onActivateAccessoryMode" @merge-accessories-to-vrm="onMergeAccessoriesToVRM" />
     <TabMotion ref="tabMotion" :selectTabType="selectTabType" :motionInfo="motionInfo" :isPlaying="isMotionPlaying" :currentTime="motionCurrentTime" :duration="motionDuration" @load-vrma="onLoadVRMA" @play-motion="onPlayMotion" @pause-motion="onPauseMotion" @stop-motion="onStopMotion" @seek-motion="onSeekMotion" @set-motion-speed="onSetMotionSpeed" @set-motion-loop="onSetMotionLoop" @reset-motion-pose="onResetMotionPose" />
+    <TabReduce ref="tabReduce" :selectTabType="selectTabType" :json="json" :drawVrm="drawVrm" @preview-polygon-reduction="onPreviewPolygonReduction" @reset-polygon-reduction="onResetPolygonReduction" @set-wireframe="onSetWireframe" />
   </div>
 </template>
 
@@ -47,6 +49,7 @@ import TabBlendShape from './VRMParserViewTabs/TabBlendShape.vue'
 import TabArmature from '@/components/VRMParserViewTabs/TabArmature.vue'
 import TabAccessory from '@/components/VRMParserViewTabs/TabAccessory.vue'
 import TabMotion from '@/components/VRMParserViewTabs/TabMotion.vue'
+import TabReduce from '@/components/VRMParserViewTabs/TabReduce.vue'
 
 @Component({
   components: {
@@ -60,7 +63,8 @@ import TabMotion from '@/components/VRMParserViewTabs/TabMotion.vue'
     TabBlendShape,
     TabArmature,
     TabAccessory,
-    TabMotion
+    TabMotion,
+    TabReduce
   }
 })
 export default class VRMParserView extends Vue {
@@ -346,6 +350,19 @@ export default class VRMParserView extends Vue {
 
   onResetMotionPose() {
     this.$emit('reset-motion-pose');
+  }
+
+  // ポリゴン削減イベント中継
+  onPreviewPolygonReduction(payload: any[]) {
+    this.$emit('preview-polygon-reduction', payload);
+  }
+
+  onResetPolygonReduction() {
+    this.$emit('reset-polygon-reduction');
+  }
+
+  onSetWireframe(enabled: boolean) {
+    this.$emit('set-wireframe', enabled);
   }
 }
 </script>

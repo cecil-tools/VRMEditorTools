@@ -1743,6 +1743,84 @@ export default class VRMViewThree extends Vue {
       }
     });
   }
+
+  // ポリゴン削減プレビュー用キャッシュ
+  private originalIndicesMap: Map<string, any> = new Map();
+
+  getThreeMeshPrimitives = async (meshIndex: number): Promise<any[]> => {
+    const primitives: any[] = [];
+    if (this.gltf?.parser && this.gltf.parser.getDependency) {
+      try {
+        const meshObj = await this.gltf.parser.getDependency('mesh', meshIndex);
+        if (meshObj) {
+          if (meshObj.isMesh) {
+            primitives.push(meshObj);
+          } else {
+            meshObj.traverse((c: any) => {
+              if (c.isMesh) primitives.push(c);
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('getDependency mesh failed for index', meshIndex, e);
+      }
+    }
+    return primitives;
+  };
+
+  previewPolygonReduction = async (
+    payload: {
+      meshIndex: number;
+      primitiveIndex: number;
+      newIndices: Uint16Array | Uint32Array;
+    }[]
+  ) => {
+    if (!this.gltf) return;
+
+    for (const item of payload) {
+      const key = `${item.meshIndex}_${item.primitiveIndex}`;
+      const prims = await this.getThreeMeshPrimitives(item.meshIndex);
+      const primMesh = prims[item.primitiveIndex];
+      if (!primMesh || !primMesh.geometry) continue;
+
+      if (!this.originalIndicesMap.has(key)) {
+        this.originalIndicesMap.set(key, primMesh.geometry.index);
+      }
+
+      primMesh.geometry.index = new (THREE as any).BufferAttribute(item.newIndices, 1);
+      primMesh.geometry.index.needsUpdate = true;
+    }
+  };
+
+  resetPolygonReductionPreview = async () => {
+    if (this.originalIndicesMap.size === 0) return;
+
+    for (const [key, origIndex] of this.originalIndicesMap.entries()) {
+      const [mIdxStr, pIdxStr] = key.split('_');
+      const prims = await this.getThreeMeshPrimitives(Number(mIdxStr));
+      const primMesh = prims[Number(pIdxStr)];
+      if (primMesh && primMesh.geometry) {
+        primMesh.geometry.index = origIndex;
+        primMesh.geometry.index.needsUpdate = true;
+      }
+    }
+    this.originalIndicesMap.clear();
+  };
+
+  setWireframeMode = (enabled: boolean) => {
+    if (!this.gltf?.scene) return;
+    this.gltf.scene.traverse((obj: any) => {
+      if (obj.isMesh && obj.material) {
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach((m: any) => {
+            m.wireframe = enabled;
+          });
+        } else {
+          obj.material.wireframe = enabled;
+        }
+      }
+    });
+  };
 }
 </script>
 

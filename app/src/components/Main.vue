@@ -13,7 +13,7 @@
       </div>
     </div>
     <div class="container vrmparserContainer">
-      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" :motionInfo="motionInfo" :isMotionPlaying="isMotionPlaying" :motionCurrentTime="motionCurrentTime" :motionDuration="motionDuration" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" @preview-material-outline-width="onPreviewMaterialOutlineWidth" @preview-material-outline-mode="onPreviewMaterialOutlineMode" @preview-texture="onPreviewTexture" @reset-texture-preview="onResetTexturePreview" @load-accessory="onLoadAccessory" @select-accessory="onSelectAccessory" @toggle-accessory-visibility="onToggleAccessoryVisibility" @remove-accessory="onRemoveAccessory" @focus-accessory="onFocusAccessory" @change-accessory-bone="onChangeAccessoryBone" @change-accessory-mode="onChangeAccessoryMode" @change-accessory-transform="onChangeAccessoryTransform" @activate-accessory-mode="onActivateAccessoryMode" @merge-accessories-to-vrm="onMergeAccessoriesToVRM" @load-vrma="onLoadVRMA" @play-motion="onPlayMotion" @pause-motion="onPauseMotion" @stop-motion="onStopMotion" @seek-motion="onSeekMotion" @set-motion-speed="onSetMotionSpeed" @set-motion-loop="onSetMotionLoop" @reset-motion-pose="onResetMotionPose" @preview-spring-bone="onPreviewSpringBone" />
+      <VRMParserView ref="vrmparser" :drawVrm="drawVrm" :drawFirstPerson="drawFirstPerson" :changeBlendShape="changeBlendShape" :motionInfo="motionInfo" :isMotionPlaying="isMotionPlaying" :motionCurrentTime="motionCurrentTime" :motionDuration="motionDuration" @select-tab="onSelectTab" @download-all-blendshapes="onDownloadAllBlendShapes" @change-first-person-offset="onChangeFirstPersonFromUI" @focus-first-person="onFocusFirstPerson" @change-blendshape-weight="onChangeBlendShapeWeight" @reset-all-blendshapes="onResetAllBlendShapes" @preview-morph-target="onPreviewMorphTarget" @register-custom-expression="onRegisterCustomExpression" @unregister-custom-expression="onUnregisterCustomExpression" @select-bone="onSelectBone" @focus-bone="onFocusBone" @toggle-skeleton="onToggleSkeleton" @toggle-xray="onToggleXRay" @preview-material-outline-width="onPreviewMaterialOutlineWidth" @preview-material-outline-mode="onPreviewMaterialOutlineMode" @preview-texture="onPreviewTexture" @reset-texture-preview="onResetTexturePreview" @load-accessory="onLoadAccessory" @select-accessory="onSelectAccessory" @toggle-accessory-visibility="onToggleAccessoryVisibility" @remove-accessory="onRemoveAccessory" @focus-accessory="onFocusAccessory" @change-accessory-bone="onChangeAccessoryBone" @change-accessory-mode="onChangeAccessoryMode" @change-accessory-transform="onChangeAccessoryTransform" @activate-accessory-mode="onActivateAccessoryMode" @merge-accessories-to-vrm="onMergeAccessoriesToVRM" @load-vrma="onLoadVRMA" @play-motion="onPlayMotion" @pause-motion="onPauseMotion" @stop-motion="onStopMotion" @seek-motion="onSeekMotion" @set-motion-speed="onSetMotionSpeed" @set-motion-loop="onSetMotionLoop" @reset-motion-pose="onResetMotionPose" @preview-spring-bone="onPreviewSpringBone" @preview-polygon-reduction="onPreviewPolygonReduction" @reset-polygon-reduction="onResetPolygonReduction" @set-wireframe="onSetWireframe" />
     </div>
 </div>
 </template>
@@ -168,6 +168,15 @@ export default class Main extends Vue {
     if (type !== 'tab_texture_color') {
       if (vrmview.resetTexturePreview) {
         vrmview.resetTexturePreview();
+      }
+    }
+
+    if (type !== 'tab_reduce') {
+      if (vrmview.resetPolygonReductionPreview) {
+        vrmview.resetPolygonReductionPreview();
+      }
+      if (vrmview.setWireframeMode) {
+        vrmview.setWireframeMode(false);
       }
     }
   }
@@ -476,6 +485,29 @@ export default class Main extends Vue {
     const vrmview = this.$refs.vrmview as any;
     if (vrmview && vrmview.updateSpringBoneLive) {
       vrmview.updateSpringBoneLive(payload.targetBoneNames, payload.settings);
+    }
+  }
+
+  // ===== ポリゴン削減連携 =====
+
+  onPreviewPolygonReduction(payload: any[]) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.previewPolygonReduction) {
+      vrmview.previewPolygonReduction(payload);
+    }
+  }
+
+  onResetPolygonReduction() {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.resetPolygonReductionPreview) {
+      vrmview.resetPolygonReductionPreview();
+    }
+  }
+
+  onSetWireframe(enabled: boolean) {
+    const vrmview = this.$refs.vrmview as any;
+    if (vrmview && vrmview.setWireframeMode) {
+      vrmview.setWireframeMode(enabled);
     }
   }
 }
