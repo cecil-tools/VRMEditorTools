@@ -190,8 +190,8 @@ export default class VRMParserView extends Vue {
     });
   }
  
-  downloadFile() {
-    VRMParser.createVRMFile()
+  downloadFile(targetVersion?: 'auto' | '0' | '1'): Promise<File> {
+    return VRMParser.createVRMFile(targetVersion)
       .then((file: File) => {
         console.log('file', file)
 
@@ -200,9 +200,11 @@ export default class VRMParserView extends Vue {
         link.href = URL.createObjectURL(file)
         link.download = file.name
         link.click()
+        return file
       })
       .catch(e => {
         console.error('error', e)
+        throw e
       })
   }
 

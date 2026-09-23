@@ -1,3 +1,5 @@
+import VRMVersionConverter from './VRMVersionConverter';
+
 /** VRMParser
  *  VRMの解析とテクスチャ置き換え等の機能をもつ
  * 
@@ -353,7 +355,7 @@ class VRMParser {
         })
     }
 
-    public static createVRMFile = (): Promise<File> => {
+    public static createVRMFile = (targetVersion?: 'auto' | '0' | '1'): Promise<File> => {
         /* Header 12-byte
         uint32 magic
         uint32 version
@@ -373,37 +375,69 @@ class VRMParser {
         console.log('chunk1', VRMParser.chunk1)
 
         return new Promise((resolve, reject) => {
-            const data = new ArrayBuffer(
-                VRMParser.CHUNK_HEADER_SIZE 
-                + VRMParser.CHUNK_LENGTH_SIZE 
-                + VRMParser.CHUNK_TYPE_SIZE 
-                + VRMParser.chunk0.chunkLength
-                + VRMParser.CHUNK_LENGTH_SIZE 
-                + VRMParser.CHUNK_TYPE_SIZE 
-                + VRMParser.chunk1.chunkLength )
+            const currentVersion = VRMParser.getVRMVersion().version;
+            const needConversion = targetVersion && targetVersion !== 'auto' && String(currentVersion) !== String(targetVersion);
 
-            const uint8 = new Uint8Array(data)
+            let chunk0Data = VRMParser.chunk0.chunkData;
+            let chunk0Length = VRMParser.chunk0.chunkLength;
+            let exportFilename = VRMParser.filename || 'model.vrm';
+
+            if (needConversion) {
+                const convertedJson = VRMVersionConverter.convert(VRMParser.json, targetVersion as '0' | '1');
+                const jsonText = JSON.stringify(convertedJson);
+                const rawBytes = new TextEncoder().encode(jsonText);
+                const padding = (4 - (rawBytes.length % 4)) % 4;
+                if (padding > 0) {
+                    chunk0Data = new Uint8Array(rawBytes.length + padding);
+                    chunk0Data.set(rawBytes);
+                    for (let i = 0; i < padding; i++) {
+                        chunk0Data[rawBytes.length + i] = 0x20;
+                    }
+                } else {
+                    chunk0Data = rawBytes;
+                }
+                chunk0Length = chunk0Data.length;
+
+                // ファイル名のサフィックス調整
+                if (targetVersion === '1') {
+                    exportFilename = exportFilename.replace(/\.vrm$/i, '') + '_vrm1.vrm';
+                } else if (targetVersion === '0') {
+                    exportFilename = exportFilename.replace(/\.vrm$/i, '') + '_vrm0.vrm';
+                }
+            }
+
+            const totalLength = VRMParser.CHUNK_HEADER_SIZE 
+                + VRMParser.CHUNK_LENGTH_SIZE 
+                + VRMParser.CHUNK_TYPE_SIZE 
+                + chunk0Length
+                + VRMParser.CHUNK_LENGTH_SIZE 
+                + VRMParser.CHUNK_TYPE_SIZE 
+                + VRMParser.chunk1.chunkLength;
+
+            const data = new ArrayBuffer(totalLength);
+            const uint8 = new Uint8Array(data);
             const view = new DataView(data);
-            let offset = 0
-            view.setUint32(0, VRMParser.header.magic, VRMParser.IS_LITTLE_ENDIAN)
-            view.setUint32(4, VRMParser.header.version, VRMParser.IS_LITTLE_ENDIAN)
-            view.setUint32(8, VRMParser.header.length, VRMParser.IS_LITTLE_ENDIAN)
-            offset += VRMParser.CHUNK_HEADER_SIZE
-            view.setUint32(offset, VRMParser.chunk0.chunkLength, VRMParser.IS_LITTLE_ENDIAN)
-            offset += VRMParser.CHUNK_LENGTH_SIZE
-            view.setUint32(offset, VRMParser.CHUNK_TYPE_JSON, VRMParser.IS_LITTLE_ENDIAN)
-            offset += VRMParser.CHUNK_TYPE_SIZE
-            uint8.set(VRMParser.chunk0.chunkData, offset)
+            let offset = 0;
+            view.setUint32(0, VRMParser.header.magic, VRMParser.IS_LITTLE_ENDIAN);
+            view.setUint32(4, VRMParser.header.version, VRMParser.IS_LITTLE_ENDIAN);
+            view.setUint32(8, totalLength, VRMParser.IS_LITTLE_ENDIAN);
+            offset += VRMParser.CHUNK_HEADER_SIZE;
 
-            offset += VRMParser.chunk0.chunkLength
-            view.setUint32(offset, VRMParser.chunk1.chunkLength, VRMParser.IS_LITTLE_ENDIAN)
-            offset += VRMParser.CHUNK_LENGTH_SIZE
-            view.setUint32(offset, VRMParser.CHUNK_TYPE_BIN, VRMParser.IS_LITTLE_ENDIAN)
-            offset += VRMParser.CHUNK_TYPE_SIZE
-            uint8.set(VRMParser.chunk1.chunkData, offset)
+            view.setUint32(offset, chunk0Length, VRMParser.IS_LITTLE_ENDIAN);
+            offset += VRMParser.CHUNK_LENGTH_SIZE;
+            view.setUint32(offset, VRMParser.CHUNK_TYPE_JSON, VRMParser.IS_LITTLE_ENDIAN);
+            offset += VRMParser.CHUNK_TYPE_SIZE;
+            uint8.set(chunk0Data, offset);
 
-            resolve(new File([data], VRMParser.filename!))
-        })
+            offset += chunk0Length;
+            view.setUint32(offset, VRMParser.chunk1.chunkLength, VRMParser.IS_LITTLE_ENDIAN);
+            offset += VRMParser.CHUNK_LENGTH_SIZE;
+            view.setUint32(offset, VRMParser.CHUNK_TYPE_BIN, VRMParser.IS_LITTLE_ENDIAN);
+            offset += VRMParser.CHUNK_TYPE_SIZE;
+            uint8.set(VRMParser.chunk1.chunkData, offset);
+
+            resolve(new File([data], exportFilename));
+        });
     }
 
     // ダウンロードしてみる
